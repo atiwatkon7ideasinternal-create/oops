@@ -55,3 +55,55 @@
   font-weight: 700;
 }
 .btn-back:hover { background: var(--color-primary-hover); }
+
+.qr img { width: 200px; height: 200px; border: 1px solid #e0e3eb; padding: 6px; background: #fff; }
+
+.secret {
+  font-size: 0.75rem;
+  color: #777;
+  margin: 8px 0 18px;
+  word-break: break-all;
+}
+.secret code {
+  background: #f0f2f6;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: monospace;
+}
+
+.input {
+  width: 100%;
+  background: #DEE3F6;
+  border: 0;
+  border-radius: 22px;
+  padding: 12px 22px;
+  font-size: 1rem;
+  outline: none;
+  margin-bottom: 12px;
+  color: #1a1a1a;
+  text-align: center;
+  letter-spacing: 4px;
+}
+.input::placeholder { color: #98a0b8; letter-spacing: 0; }
+
+.btn-confirm {
+  background: var(--color-green);
+  color: #fff;
+  border: 0;
+  border-radius: 22px;
+  padding: 10px 26px;
+  font-weight: 800;
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  cursor: pointer;
+  margin-bottom: 14px;
+  letter-spacing: 1px;
+}
+.btn-confirm:hover { background: var(--color-green-hover); }
+.btn-confirm:disabled { opacity: 0.55; cursor: not-allowed; }
+
+.form-error {
+  color: var(--color-red);
+  font-size: 0.85rem;
+  margin: 4px 0 12px;
+}

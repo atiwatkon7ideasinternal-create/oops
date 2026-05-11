@@ -57,3 +57,20 @@
   letter-spacing: 1px;
 }
 .btn-submit:hover { background: var(--color-green-hover); }
+.btn-submit:disabled { opacity: 0.55; cursor: not-allowed; }
+
+.meta { font-size: 0.85rem; color: #555; margin: -16px 0 16px; }
+.dev-otp {
+  font-size: 0.8rem;
+  background: #fff5d6;
+  color: #6b5500;
+  padding: 6px 12px;
+  border-radius: 6px;
+  margin-bottom: 16px;
+}
+.dev-otp code { font-weight: 700; letter-spacing: 2px; }
+.form-error {
+  color: var(--color-red);
+  font-size: 0.85rem;
+  margin: -10px 0 16px;
+}

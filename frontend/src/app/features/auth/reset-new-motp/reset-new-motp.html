@@ -2,13 +2,27 @@
   <div class="card">
     <h2 class="heading">Reset M-OTP</h2>
     <h1 class="logo">OOPS!</h1>
-    <p class="prompt">กรุณากรอกรหัส M-OTP ใหม่</p>
-    <input
-      class="input"
-      placeholder="Enter M-OTP"
-      [ngModel]="motp()"
-      (ngModelChange)="motp.set($event)"
-    />
-    <button class="btn-submit" (click)="submit()">submit</button>
+
+    @if (loading()) {
+      <p class="prompt">กำลังโหลด QR ใหม่...</p>
+    } @else if (qr()) {
+      <p class="prompt">สแกน QR ใหม่ด้วย Google Authenticator</p>
+      <div class="qr"><img [src]="qr()" alt="New OTP QR" /></div>
+      <input
+        class="input"
+        placeholder="กรอกรหัส 6 หลัก"
+        maxlength="6"
+        inputmode="numeric"
+        [ngModel]="token()"
+        (ngModelChange)="token.set($event)"
+        (keyup.enter)="confirm()"
+      />
+      <button class="btn-submit" (click)="confirm()" [disabled]="confirming()">
+        {{ confirming() ? 'กำลังยืนยัน...' : 'ยืนยัน' }}
+      </button>
+    }
+    @if (error()) {
+      <p class="form-error">{{ error() }}</p>
+    }
   </div>
 </main>

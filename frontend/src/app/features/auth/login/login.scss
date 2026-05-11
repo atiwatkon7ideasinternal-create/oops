@@ -79,3 +79,43 @@
 }
 .links a { color: var(--color-primary); }
 .links a:hover { text-decoration: underline; }
+
+.mode-toggle {
+  display: flex;
+  background: #eef0f6;
+  border-radius: 22px;
+  padding: 3px;
+  margin-bottom: 18px;
+  gap: 2px;
+}
+.mode-btn {
+  flex: 1;
+  background: transparent;
+  border: 0;
+  padding: 8px 12px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-family: var(--font-display);
+  color: #555;
+  cursor: pointer;
+}
+.mode-btn.active {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.btn-submit:disabled { opacity: 0.55; cursor: not-allowed; }
+
+.form-error {
+  color: var(--color-red);
+  font-size: 0.85rem;
+  margin: 4px 0 8px;
+}
+
+.register-link {
+  margin-top: 22px;
+  font-size: 0.85rem;
+  color: #555;
+}
+.register-link a { color: var(--color-primary); font-weight: 600; }
+.register-link a:hover { text-decoration: underline; }

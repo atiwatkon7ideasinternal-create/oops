@@ -8,10 +8,17 @@
     <input
       class="input"
       placeholder="Enter email"
+      type="email"
       [ngModel]="email()"
       (ngModelChange)="email.set($event)"
+      (keyup.enter)="submit()"
     />
-    <button class="btn-submit" (click)="submit()">submit</button>
+    @if (error()) {
+      <p class="form-error">{{ error() }}</p>
+    }
+    <button class="btn-submit" (click)="submit()" [disabled]="loading()">
+      {{ loading() ? 'กำลังส่ง...' : 'submit' }}
+    </button>
 
     <a routerLink="/login" class="link">Forget email</a>
   </div>

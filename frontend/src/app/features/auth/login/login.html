@@ -3,27 +3,63 @@
     <h2 class="heading">Log-in</h2>
     <h1 class="logo">OOPS!</h1>
 
+    <div class="mode-toggle">
+      <button
+        type="button"
+        class="mode-btn"
+        [class.active]="mode() === 'member'"
+        (click)="mode.set('member')"
+      >Member</button>
+      <button
+        type="button"
+        class="mode-btn"
+        [class.active]="mode() === 'admin'"
+        (click)="mode.set('admin')"
+      >Admin</button>
+    </div>
+
     <input
       class="input"
       placeholder="Enter email"
+      type="email"
       [ngModel]="email()"
       (ngModelChange)="email.set($event)"
     />
+    @if (mode() === 'admin') {
+      <input
+        class="input"
+        placeholder="Password"
+        type="password"
+        [ngModel]="password()"
+        (ngModelChange)="password.set($event)"
+      />
+    }
     <input
       class="input"
-      placeholder="M-OTP"
+      placeholder="M-OTP (6 หลัก)"
+      maxlength="6"
+      inputmode="numeric"
       [ngModel]="motp()"
       (ngModelChange)="motp.set($event)"
+      (keyup.enter)="submit()"
     />
-    <a class="link-row" (click)="requestEmailOtp()" routerLink="/register/email-otp">Request Email-OTP</a>
+
+    @if (error()) {
+      <p class="form-error">{{ error() }}</p>
+    }
 
     <div class="actions">
-      <button type="button" class="btn-submit" (click)="submit()">SUBMIT</button>
+      <button type="button" class="btn-submit" (click)="submit()" [disabled]="loading()">
+        {{ loading() ? 'กำลังเข้าสู่ระบบ...' : 'SUBMIT' }}
+      </button>
     </div>
 
     <div class="links">
       <a routerLink="/reset/email">Forgot M-OTP?</a>
       <a routerLink="/contact-admin">Contact admin</a>
     </div>
+    <p class="register-link">
+      ยังไม่มีบัญชี? <a routerLink="/register">สมัครสมาชิก</a>
+    </p>
   </div>
 </main>

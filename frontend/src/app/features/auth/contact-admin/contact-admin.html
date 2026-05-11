@@ -1,5 +1,5 @@
 <main class="page">
-  <form class="card" (ngSubmit)="submit()">
+  <form class="card" (ngSubmit)="submit(f)" #f="ngForm">
     <h2 class="heading">ติดต่อแอดมิน</h2>
     <h1 class="logo">OOPS!</h1>
     <p class="prompt">กรุณากรอกข้อมูลต่อไปนี้ให้ครบถ้วนเพื่อทำการกู้คืนรหัส</p>
@@ -10,6 +10,14 @@
     <label class="field"><span>Phone :</span><input name="phone" type="tel" ngModel /></label>
     <label class="field"><span>Address :</span><input name="address" ngModel /></label>
 
-    <button type="submit" class="btn-submit">submit</button>
+    @if (sent()) {
+      <p class="success">ส่งคำขอแล้ว — admin จะติดต่อกลับ</p>
+    }
+    @if (error()) {
+      <p class="form-error">{{ error() }}</p>
+    }
+    <button type="submit" class="btn-submit" [disabled]="loading() || sent()">
+      {{ loading() ? 'กำลังส่ง...' : 'submit' }}
+    </button>
   </form>
 </main>

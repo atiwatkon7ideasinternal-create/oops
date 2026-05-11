@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { requireLogin } from './data/auth.guards';
 
 export const routes: Routes = [
   {
@@ -67,14 +68,17 @@ export const routes: Routes = [
   },
   {
     path: 'safebox/add',
+    canActivate: [requireLogin],
     loadComponent: () => import('./features/safebox/add/add').then((m) => m.Add),
   },
   {
     path: 'safebox/edit/:id',
+    canActivate: [requireLogin],
     loadComponent: () => import('./features/safebox/edit/edit').then((m) => m.Edit),
   },
   {
     path: 'safebox/:category',
+    canActivate: [requireLogin],
     loadComponent: () => import('./features/safebox/list/list').then((m) => m.List),
   },
   { path: '**', redirectTo: '' },

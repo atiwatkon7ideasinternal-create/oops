@@ -71,3 +71,31 @@
   color: var(--color-primary);
 }
 .link:hover { text-decoration: underline; }
+
+.btn-submit:disabled { opacity: 0.55; cursor: not-allowed; }
+
+.form-error {
+  color: var(--color-red);
+  font-size: 0.85rem;
+  margin: 4px 0 10px;
+}
+
+.dev-otp {
+  font-size: 0.8rem;
+  background: #fff5d6;
+  color: #6b5500;
+  padding: 6px 12px;
+  border-radius: 6px;
+  margin: -10px 0 14px;
+}
+.dev-otp code { font-weight: 700; letter-spacing: 2px; }
+
+.qr { display: flex; justify-content: center; margin: 12px 0; }
+.qr img { width: 200px; height: 200px; background: #fff; padding: 4px; }
+
+.success {
+  color: var(--color-green);
+  font-weight: 700;
+  margin: 4px 0 12px;
+  font-size: 0.95rem;
+}

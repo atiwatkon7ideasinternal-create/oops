@@ -20,16 +20,16 @@
       </p>
     </aside>
 
-    <form class="form" (ngSubmit)="submit()" #f="ngForm">
+    <form class="form" (ngSubmit)="submit(f)" #f="ngForm">
       <h1 class="title">Crreate Account</h1>
 
       <label class="field">
         <span class="label">Full Name :</span>
-        <input type="text" name="fullName" ngModel />
+        <input type="text" name="fullName" ngModel required />
       </label>
       <label class="field">
         <span class="label">Email :</span>
-        <input type="email" name="email" ngModel />
+        <input type="email" name="email" ngModel required />
       </label>
       <label class="field">
         <span class="label">Phone :</span>
@@ -41,7 +41,13 @@
         <span>I'm not robot</span>
       </label>
 
-      <button type="submit" class="btn-submit">SIGN UP</button>
+      @if (error()) {
+        <p class="form-error">{{ error() }}</p>
+      }
+
+      <button type="submit" class="btn-submit" [disabled]="loading()">
+        {{ loading() ? 'กำลังส่ง...' : 'SIGN UP' }}
+      </button>
     </form>
   </div>
 </main>

@@ -3,6 +3,8 @@ import express from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
 import { checkerRouter } from './routes/checker.js';
+import { authRouter } from './routes/auth.js';
+import { connectMongo } from './db/mongo.js';
 
 const app = express();
 
@@ -24,6 +26,7 @@ app.get('/api/health', (_req, res) => {
 });
 
 app.use('/api/checker', checkerRouter);
+app.use('/api/auth', authRouter);
 
 app.use((_req, res) => {
   res.status(404).json({ error: 'Not Found' });
@@ -35,8 +38,16 @@ app.use((err: Error, _req: express.Request, res: express.Response, _next: expres
 });
 
 const port = Number(process.env.PORT) || 3100;
-app.listen(port, () => {
-  console.log(`🚀 OOPS! backend (Express) listening on http://localhost:${port}`);
-});
+connectMongo()
+  .then(() => {
+    app.listen(port, () => {
+      console.log(`🚀 OOPS! backend (Express) listening on http://localhost:${port}`);
+    });
+  })
+  .catch((err) => {
+    console.error('Failed to start: MongoDB connect error');
+    console.error(err);
+    process.exit(1);
+  });
 
 export default app;

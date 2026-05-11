@@ -10,17 +10,43 @@ import { AuthService } from '../../../data/auth.service';
   styleUrl: './login.scss',
 })
 export class Login {
-  email = signal('');
-  motp = signal('');
   private auth = inject(AuthService);
   private router = inject(Router);
 
-  submit() {
-    this.auth.login();
-    this.router.navigateByUrl('/safebox/all');
+  mode = signal<'member' | 'admin'>('member');
+  email = signal('');
+  password = signal('');
+  motp = signal('');
+  loading = signal(false);
+  error = signal<string | null>(null);
+
+  toggleMode() {
+    this.mode.set(this.mode() === 'member' ? 'admin' : 'member');
+    this.error.set(null);
   }
 
-  requestEmailOtp() {
-    this.router.navigateByUrl('/register/email-otp');
+  async submit() {
+    if (!this.email() || !this.motp()) {
+      this.error.set('กรุณากรอกอีเมลและ M-OTP');
+      return;
+    }
+    if (this.mode() === 'admin' && !this.password()) {
+      this.error.set('กรุณากรอกรหัสผ่าน');
+      return;
+    }
+    this.loading.set(true);
+    this.error.set(null);
+    try {
+      if (this.mode() === 'admin') {
+        await this.auth.loginAdmin(this.email(), this.password(), this.motp());
+      } else {
+        await this.auth.loginMember(this.email(), this.motp());
+      }
+      this.router.navigateByUrl('/safebox/all');
+    } catch (e: any) {
+      this.error.set(e?.error?.error ?? e?.message ?? 'API error');
+    } finally {
+      this.loading.set(false);
+    }
   }
 }
