@@ -1,0 +1,47 @@
+<app-header-public />
+
+<main class="page">
+  <h1 class="title">ตรวจสอบรหัสผ่านด้วยพจนานุกรม</h1>
+  <p class="note">** เลือกพจนานุกรมที่ต้องการก่อนตรวจสอบรหัสผ่านของคุณ **</p>
+
+  <div class="form">
+    <div class="input-row">
+      <input
+        type="password"
+        class="pw-input"
+        placeholder="Enter your password"
+        [ngModel]="password()"
+        (ngModelChange)="password.set($event)"
+        (keyup.enter)="check()"
+      />
+      <div class="dict-list">
+        @for (d of dicts; track d.id) {
+          <button
+            type="button"
+            class="dict-btn"
+            [class.active]="selected().includes(d.id)"
+            (click)="toggle(d.id)"
+          >{{ d.label }}</button>
+        }
+      </div>
+    </div>
+
+    <button type="button" class="btn-orange" (click)="check()" [disabled]="loading()">
+      {{ loading() ? 'Checking...' : 'Check password' }}
+    </button>
+
+    @if (error()) {
+      <p class="result unsafe">เกิดข้อผิดพลาด: {{ error() }}</p>
+    }
+
+    @if (result(); as r) {
+      @if (r.safe) {
+        <p class="result safe">รหัสผ่านของคุณปลอดภัย!</p>
+        <p class="result-info">รหัสผ่านของคุณไม่เคยรั่วไหล</p>
+      } @else {
+        <p class="result unsafe">รหัสผ่านของคุณไม่ปลอดภัย!</p>
+        <p class="result-info">เราตรวจพบรหัสผ่านของคุณบนพจนานุกรม<br />กรุณาเปลี่ยนรหัสผ่านเพื่อความปลอดภัย</p>
+      }
+    }
+  </div>
+</main>

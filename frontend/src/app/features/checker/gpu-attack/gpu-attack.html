@@ -25,13 +25,19 @@
       </div>
     </div>
 
-    <button type="button" class="btn-orange" (click)="check()">Check password</button>
+    <button type="button" class="btn-orange" (click)="check()" [disabled]="loading()">
+      {{ loading() ? 'Checking...' : 'Check password' }}
+    </button>
 
-    @if (checked() && password()) {
-      <p class="result" [class.safe]="result().safe" [class.unsafe]="!result().safe">
-        ระยะเวลาในการถูกโจมตี : {{ result().time }}
+    @if (error()) {
+      <p class="result unsafe">เกิดข้อผิดพลาด: {{ error() }}</p>
+    }
+
+    @if (result(); as r) {
+      <p class="result" [class.safe]="r.safe" [class.unsafe]="!r.safe">
+        ระยะเวลาในการถูกโจมตี : {{ r.time }}
       </p>
-      @if (!result().safe) {
+      @if (!r.safe) {
         <p class="info">กรุณาเปลี่ยนรหัสผ่านเพื่อความปลอดภัย</p>
       }
     }
