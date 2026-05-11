@@ -60,6 +60,7 @@ vaultRouter.get('/', async (req, res) => {
       systemName: e.systemName,
       category: e.category,
       color: e.color,
+      imageDataUrl: e.imageDataUrl,
       ciphertext: e.ciphertext,
       iv: e.iv,
       createdAt: e.createdAt,
@@ -77,6 +78,7 @@ vaultRouter.get('/:id', async (req, res) => {
     systemName: entry.systemName,
     category: entry.category,
     color: entry.color,
+    imageDataUrl: entry.imageDataUrl,
     ciphertext: entry.ciphertext,
     iv: entry.iv,
   });
@@ -84,9 +86,12 @@ vaultRouter.get('/:id', async (req, res) => {
 
 // ─── Create entry ──────────────────────────────────────────────────────
 vaultRouter.post('/', async (req, res) => {
-  const { systemName, category, color, ciphertext, iv } = req.body ?? {};
+  const { systemName, category, color, imageDataUrl, ciphertext, iv } = req.body ?? {};
   if (!systemName || !ciphertext || !iv) {
     return res.status(400).json({ error: 'systemName, ciphertext, iv required' });
+  }
+  if (imageDataUrl && imageDataUrl.length > 200_000) {
+    return res.status(413).json({ error: 'image too large (>200KB) — please use a smaller image' });
   }
   const cat = (VAULT_CATEGORIES as readonly string[]).includes(category)
     ? (category as VaultCategory)
@@ -96,6 +101,7 @@ vaultRouter.post('/', async (req, res) => {
     systemName,
     category: cat,
     color: color ?? '#7a8597',
+    imageDataUrl,
     ciphertext,
     iv,
   });
@@ -104,7 +110,10 @@ vaultRouter.post('/', async (req, res) => {
 
 // ─── Update entry ──────────────────────────────────────────────────────
 vaultRouter.put('/:id', async (req, res) => {
-  const { systemName, category, color, ciphertext, iv } = req.body ?? {};
+  const { systemName, category, color, imageDataUrl, ciphertext, iv } = req.body ?? {};
+  if (imageDataUrl && imageDataUrl.length > 200_000) {
+    return res.status(413).json({ error: 'image too large (>200KB)' });
+  }
   const entry = await Vault.findOne({ _id: req.params.id, userId: req.session!.sub });
   if (!entry) return res.status(404).json({ error: 'Not found' });
   if (systemName) entry.systemName = systemName;
@@ -112,6 +121,7 @@ vaultRouter.put('/:id', async (req, res) => {
     entry.category = category;
   }
   if (color) entry.color = color;
+  if (imageDataUrl !== undefined) entry.imageDataUrl = imageDataUrl || undefined;
   if (ciphertext && iv) {
     entry.ciphertext = ciphertext;
     entry.iv = iv;

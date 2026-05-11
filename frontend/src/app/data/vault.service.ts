@@ -25,6 +25,7 @@ export interface EncryptedEntry {
   systemName: string;
   category: VaultCategory;
   color: string;
+  imageDataUrl?: string;
   ciphertext: string;
   iv: string;
   createdAt?: string;
@@ -117,6 +118,7 @@ export class VaultService {
     systemName: string;
     category: VaultCategory;
     color?: string;
+    imageDataUrl?: string;
     secrets: VaultSecrets;
   }): Promise<string> {
     const key = this._key();
@@ -127,6 +129,7 @@ export class VaultService {
         systemName: input.systemName,
         category: input.category,
         color: input.color,
+        imageDataUrl: input.imageDataUrl,
         ciphertext,
         iv,
       }),
@@ -136,7 +139,13 @@ export class VaultService {
 
   async update(
     id: string,
-    input: { systemName?: string; category?: VaultCategory; color?: string; secrets?: VaultSecrets },
+    input: {
+      systemName?: string;
+      category?: VaultCategory;
+      color?: string;
+      imageDataUrl?: string | null;
+      secrets?: VaultSecrets;
+    },
   ) {
     const key = this._key();
     if (!key) throw new Error('vault is locked');
@@ -145,6 +154,9 @@ export class VaultService {
       category: input.category,
       color: input.color,
     };
+    if (input.imageDataUrl !== undefined) {
+      body.imageDataUrl = input.imageDataUrl ?? '';
+    }
     if (input.secrets) {
       const { ciphertext, iv } = await this.cryptoSvc.encrypt(key, JSON.stringify(input.secrets));
       body.ciphertext = ciphertext;

@@ -109,3 +109,41 @@
   font-size: 0.85rem;
   margin: 0;
 }
+
+.logo-img {
+  display: inline-block;
+  width: 90px;
+  height: 90px;
+  border-radius: 18px;
+  object-fit: cover;
+  background: #f5f6f8;
+  border: 1px solid #e0e3eb;
+}
+
+.logo-placeholder {
+  background: #c0c4cb !important;
+}
+
+.logo-actions {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.btn-upload, .btn-clear {
+  display: inline-block;
+  border: 1px solid var(--color-primary);
+  color: var(--color-primary);
+  background: #fff;
+  border-radius: 18px;
+  padding: 5px 14px;
+  font-size: 0.82rem;
+  font-family: var(--font-body);
+  cursor: pointer;
+}
+.btn-upload:hover, .btn-clear:hover {
+  background: #f0f3f9;
+}
+.btn-clear { border-color: var(--color-red); color: var(--color-red); }
+.btn-clear:hover { background: #fff0f1; }

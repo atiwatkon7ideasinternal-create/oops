@@ -15,9 +15,22 @@
       <p class="loading">กำลังโหลด...</p>
     } @else if (entry(); as e) {
       <div class="logo-wrap">
-        <span class="logo" [style.background]="e.color">
-          {{ systemName().charAt(0).toUpperCase() }}
-        </span>
+        @if (imageDataUrl()) {
+          <img class="logo-img" [src]="imageDataUrl()" alt="logo" />
+        } @else {
+          <span class="logo" [style.background]="e.color">
+            {{ systemName().charAt(0).toUpperCase() }}
+          </span>
+        }
+        <div class="logo-actions">
+          <label class="btn-upload">
+            {{ imageLoading() ? 'กำลังโหลด...' : (imageDataUrl() ? 'เปลี่ยนรูป' : 'อัปโหลดรูป') }}
+            <input type="file" accept="image/*" (change)="onFile($event)" hidden />
+          </label>
+          @if (imageDataUrl()) {
+            <button type="button" class="btn-clear" (click)="clearImage()">ลบรูป</button>
+          }
+        </div>
       </div>
 
       <form class="form" (ngSubmit)="save()">

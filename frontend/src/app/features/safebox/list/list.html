@@ -10,16 +10,20 @@
       <p class="empty">{{ error() }}</p>
     } @else {
       <div class="grid">
-        <a routerLink="/safebox/add" class="add-card" aria-label="Add new entry">
+        <a routerLink="/safebox/add" class="add-card" aria-label="เพิ่มรายการใหม่">
           <span class="plus">+</span>
           <span class="add-label">เพิ่มรายการ</span>
         </a>
 
         @for (entry of entries(); track entry.id) {
           <button type="button" class="app-card" (click)="open(entry.id)">
-            <span class="logo" [style.background]="entry.color">
-              {{ entry.systemName.charAt(0).toUpperCase() }}
-            </span>
+            @if (entry.imageDataUrl) {
+              <img class="logo-img" [src]="entry.imageDataUrl" [alt]="entry.systemName" />
+            } @else {
+              <span class="logo" [style.background]="entry.color">
+                {{ entry.systemName.charAt(0).toUpperCase() }}
+              </span>
+            }
             <span class="name">{{ entry.systemName }}</span>
           </button>
         }
