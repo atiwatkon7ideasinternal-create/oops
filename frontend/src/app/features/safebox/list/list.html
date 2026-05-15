@@ -1,7 +1,7 @@
 <app-header-app />
 
 <div class="layout">
-  <app-sidebar />
+  <app-sidebar [activeGroup]="group()" />
 
   <main class="content">
     @if (loading()) {
@@ -15,17 +15,16 @@
           <span class="add-label">เพิ่มรายการ</span>
         </a>
 
-        @for (entry of entries(); track entry.vid) {
-          <button type="button" class="app-card" (click)="open(entry.vid)">
-            <span class="logo">
-              {{ entry.systemName.charAt(0).toUpperCase() }}
-            </span>
-            <span class="name">{{ entry.systemName }}</span>
+        @for (tile of tiles(); track tile.appName) {
+          <button type="button" class="app-card" [class.saved]="!!tile.vid" (click)="open(tile)">
+            <span class="logo">{{ tile.appName.charAt(0).toUpperCase() }}</span>
+            <span class="name">{{ tile.appName }}</span>
+            @if (tile.vid) { <span class="badge">บันทึกแล้ว</span> }
           </button>
         }
 
-        @if (entries().length === 0) {
-          <p class="empty">ยังไม่มีรายการ — กด + เพื่อเพิ่ม</p>
+        @if (tiles().length === 0) {
+          <p class="empty">ยังไม่มีแอปในหมวด "{{ groupLabel() }}"</p>
         }
       </div>
     }

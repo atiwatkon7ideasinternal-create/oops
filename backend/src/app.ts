@@ -5,7 +5,9 @@ import morgan from 'morgan';
 import { checkerRouter } from './routes/checker.js';
 import { authRouter } from './routes/auth.js';
 import { vaultRouter } from './routes/vault.js';
+import { applicationsRouter } from './routes/applications.js';
 import { connectMongo } from './db/mongo.js';
+import { seedApplicationsIfEmpty } from './services/seed-applications.js';
 
 export function createApp() {
   const app = express();
@@ -24,6 +26,7 @@ export function createApp() {
   app.use(async (_req, _res, next) => {
     try {
       await connectMongo();
+      await seedApplicationsIfEmpty();
       next();
     } catch (err) {
       next(err);
@@ -43,6 +46,7 @@ export function createApp() {
   app.use('/api/checker', checkerRouter);
   app.use('/api/auth', authRouter);
   app.use('/api/vault', vaultRouter);
+  app.use('/api/applications', applicationsRouter);
 
   app.use((_req, res) => {
     res.status(404).json({ error: 'Not Found' });

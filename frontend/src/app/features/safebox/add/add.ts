@@ -1,6 +1,6 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, OnInit } from '@angular/core';
 import { FormsModule, NgForm } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { HeaderApp } from '../../../shared/header-app/header-app';
 import { VaultService } from '../../../data/vault.service';
 
@@ -10,12 +10,19 @@ import { VaultService } from '../../../data/vault.service';
   templateUrl: './add.html',
   styleUrl: './add.scss',
 })
-export class Add {
+export class Add implements OnInit {
+  private route = inject(ActivatedRoute);
   private vault = inject(VaultService);
   private router = inject(Router);
 
+  prefilledName = signal('');
   loading = signal(false);
   error = signal<string | null>(null);
+
+  ngOnInit() {
+    const app = this.route.snapshot.queryParamMap.get('app');
+    if (app) this.prefilledName.set(app);
+  }
 
   back() { history.back(); }
 
@@ -33,7 +40,7 @@ export class Add {
         systemName,
         secrets: { username, password, pin, other },
       });
-      this.router.navigate(['/safebox']);
+      this.router.navigate(['/safebox/all']);
     } catch (e: any) {
       this.error.set(e?.error?.error ?? e?.message ?? 'API error');
     } finally {
