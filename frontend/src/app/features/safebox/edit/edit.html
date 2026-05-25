@@ -16,9 +16,25 @@
     } @else if (entry()) {
       <form class="form" (ngSubmit)="save()">
         <label class="field">
-          <span class="label">ชื่อระบบ</span>
+          <span class="label">ชื่อระบบ (SystemName)</span>
           <input [ngModel]="systemName()" (ngModelChange)="systemName.set($event)" name="systemName" required />
         </label>
+        <label class="field">
+          <span class="label">ชื่อ Secret (SecretName)</span>
+          <input [ngModel]="secretName()" (ngModelChange)="secretName.set($event)" name="secretName" />
+        </label>
+        <label class="field">
+          <span class="label">คำอธิบาย (SecretDescription)</span>
+          <input [ngModel]="secretDescription()" (ngModelChange)="secretDescription.set($event)" name="secretDescription" />
+        </label>
+        <label class="field">
+          <span class="label">รูป/โลโก้ (Picture)</span>
+          <input type="file" accept="image/*" (change)="onPictureSelected($event)" />
+          @if (picture()) {
+            <img class="preview" [src]="picture()" alt="preview" />
+          }
+        </label>
+
         <label class="field">
           <span class="label">Username</span>
           <input [ngModel]="username()" (ngModelChange)="username.set($event)" name="username" placeholder="Enter username" />

@@ -10,48 +10,14 @@ export interface VaultSecrets {
   other?: string;
 }
 
-interface SecretRow {
-  id: string;
-  name: string;
-  value: string;
-}
-
 export interface VaultEntry {
-  vid: string;
-  systemID: string;
+  usersecretId: string;
   systemName: string;
+  secretName: string;
+  secretDescription: string;
+  picture: string;
   secrets: VaultSecrets;
   createdAt?: string;
-}
-
-interface RawEntry {
-  vid: string;
-  systemID: string;
-  systemName: string;
-  secrets: SecretRow[];
-  createdAt?: string;
-}
-
-function rowsToSecrets(rows: SecretRow[]): VaultSecrets {
-  const out: VaultSecrets = {};
-  for (const r of rows) {
-    if (r.name === 'username') out.username = r.value;
-    else if (r.name === 'password') out.password = r.value;
-    else if (r.name === 'pin') out.pin = r.value;
-    else if (r.name === 'qr') out.qr = r.value;
-    else if (r.name === 'other') out.other = r.value;
-  }
-  return out;
-}
-
-function toEntry(raw: RawEntry): VaultEntry {
-  return {
-    vid: raw.vid,
-    systemID: raw.systemID,
-    systemName: raw.systemName,
-    secrets: rowsToSecrets(raw.secrets ?? []),
-    createdAt: raw.createdAt,
-  };
 }
 
 @Injectable({ providedIn: 'root' })
@@ -61,31 +27,42 @@ export class VaultService {
 
   async list(): Promise<VaultEntry[]> {
     const res = await firstValueFrom(
-      this.http.get<{ entries: RawEntry[] }>(this.base),
+      this.http.get<{ entries: VaultEntry[] }>(this.base),
     );
-    return res.entries.map(toEntry);
+    return res.entries;
   }
 
-  async get(vid: string): Promise<VaultEntry> {
-    const raw = await firstValueFrom(this.http.get<RawEntry>(`${this.base}/${vid}`));
-    return toEntry(raw);
+  async get(id: string): Promise<VaultEntry> {
+    return firstValueFrom(this.http.get<VaultEntry>(`${this.base}/${id}`));
   }
 
-  async create(input: { systemName: string; secrets: VaultSecrets }): Promise<string> {
+  async create(input: {
+    systemName: string;
+    secretName?: string;
+    secretDescription?: string;
+    picture?: string;
+    secrets: VaultSecrets;
+  }): Promise<string> {
     const res = await firstValueFrom(
-      this.http.post<{ ok: true; vid: string }>(this.base, {
-        systemName: input.systemName,
-        secrets: input.secrets,
-      }),
+      this.http.post<{ ok: true; usersecretId: string }>(this.base, input),
     );
-    return res.vid;
+    return res.usersecretId;
   }
 
-  async update(vid: string, input: { systemName?: string; secrets?: VaultSecrets }) {
-    await firstValueFrom(this.http.put<{ ok: true }>(`${this.base}/${vid}`, input));
+  async update(
+    id: string,
+    input: {
+      systemName?: string;
+      secretName?: string;
+      secretDescription?: string;
+      picture?: string;
+      secrets?: VaultSecrets;
+    },
+  ) {
+    await firstValueFrom(this.http.put<{ ok: true }>(`${this.base}/${id}`, input));
   }
 
-  async delete(vid: string) {
-    await firstValueFrom(this.http.delete<{ ok: true }>(`${this.base}/${vid}`));
+  async delete(id: string) {
+    await firstValueFrom(this.http.delete<{ ok: true }>(`${this.base}/${id}`));
   }
 }

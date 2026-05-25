@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { HeaderApp } from '../../../shared/header-app/header-app';
 import { VaultService, VaultEntry } from '../../../data/vault.service';
+import { resizeToDataUrl } from '../../../data/image.util';
 
 @Component({
   selector: 'app-safebox-edit',
@@ -21,22 +22,28 @@ export class Edit implements OnInit {
   error = signal<string | null>(null);
 
   systemName = signal('');
+  secretName = signal('');
+  secretDescription = signal('');
+  picture = signal('');
   username = signal('');
   password = signal('');
   pin = signal('');
   other = signal('');
 
   async ngOnInit() {
-    const vid = this.route.snapshot.paramMap.get('vid');
-    if (!vid) {
+    const id = this.route.snapshot.paramMap.get('id');
+    if (!id) {
       this.error.set('No id');
       this.loading.set(false);
       return;
     }
     try {
-      const e = await this.vault.get(vid);
+      const e = await this.vault.get(id);
       this.entry.set(e);
       this.systemName.set(e.systemName);
+      this.secretName.set(e.secretName);
+      this.secretDescription.set(e.secretDescription);
+      this.picture.set(e.picture);
       this.username.set(e.secrets.username ?? '');
       this.password.set(e.secrets.password ?? '');
       this.pin.set(e.secrets.pin ?? '');
@@ -50,14 +57,33 @@ export class Edit implements OnInit {
 
   back() { history.back(); }
 
+  async onPictureSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      this.error.set('กรุณาเลือกไฟล์รูปภาพ');
+      return;
+    }
+    try {
+      this.picture.set(await resizeToDataUrl(file, 256));
+      this.error.set(null);
+    } catch (e: any) {
+      this.error.set(e?.message ?? 'อ่านรูปไม่สำเร็จ');
+    }
+  }
+
   async save() {
     const cur = this.entry();
     if (!cur || this.saving()) return;
     this.saving.set(true);
     this.error.set(null);
     try {
-      await this.vault.update(cur.vid, {
+      await this.vault.update(cur.usersecretId, {
         systemName: this.systemName(),
+        secretName: this.secretName(),
+        secretDescription: this.secretDescription(),
+        picture: this.picture(),
         secrets: {
           username: this.username(),
           password: this.password(),
@@ -79,7 +105,7 @@ export class Edit implements OnInit {
     if (!confirm(`ลบรายการ "${cur.systemName}"?`)) return;
     this.saving.set(true);
     try {
-      await this.vault.delete(cur.vid);
+      await this.vault.delete(cur.usersecretId);
       this.router.navigate(['/safebox']);
     } catch (e: any) {
       this.error.set(e?.error?.error ?? e?.message ?? 'API error');

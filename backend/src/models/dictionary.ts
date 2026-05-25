@@ -4,8 +4,8 @@ import { nextSeq, formatId } from './counter.js';
 const dictionarySchema = new Schema(
   {
     did: { type: String, required: true, unique: true, index: true },
-    rockyou: { type: String, required: true, maxlength: 50 },
-    hibp: { type: String, required: true, maxlength: 255 },
+    dictfile: { type: String, required: true, maxlength: 255 },
+    dictname: { type: String, required: true, maxlength: 100 },
   },
   { timestamps: true },
 );

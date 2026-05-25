@@ -13,16 +13,15 @@
         [ngModel]="password()"
         (ngModelChange)="password.set($event)"
       />
-      <div class="gpu-list">
-        @for (g of gpus; track g) {
-          <button
-            type="button"
-            class="gpu-btn"
-            [class.active]="gpu() === g"
-            (click)="gpu.set(g)"
-          >{{ g }}</button>
+      <select
+        class="gpu-select"
+        [ngModel]="gpu()"
+        (ngModelChange)="gpu.set($event)"
+      >
+        @for (g of gpus(); track g) {
+          <option [value]="g">{{ g }}</option>
         }
-      </div>
+      </select>
     </div>
 
     <button type="button" class="btn-orange" (click)="check()" [disabled]="loading()">

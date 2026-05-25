@@ -1,13 +1,5 @@
 <aside class="sidebar">
   <a routerLink="/" class="item" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">หน้าแรก</a>
   <a routerLink="/checker/dictionary" class="item" routerLinkActive="active">ตรวจสอบรหัสผ่าน</a>
-
-  @for (g of groups; track g.slug) {
-    <a
-      [routerLink]="['/safebox', g.slug]"
-      routerLinkActive="active"
-      class="item"
-      [class.active]="activeGroup() === g.slug"
-    >{{ g.label }}</a>
-  }
+  <a routerLink="/safebox" class="item" routerLinkActive="active">แอปทั้งหมด</a>
 </aside>

@@ -44,4 +44,11 @@ export class CheckerService {
       this.http.post<GpuAttackResult>(`${this.base}/gpu-attack`, { password, gpu }),
     );
   }
+
+  async listGpus(): Promise<string[]> {
+    const res = await firstValueFrom(
+      this.http.get<{ gpus: string[] }>(`${this.base}/gpus`),
+    );
+    return res.gpus;
+  }
 }

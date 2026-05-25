@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { HeaderPublic } from '../../../shared/header-public/header-public';
 import { CheckerService, GpuAttackResult } from '../../../data/checker.service';
@@ -9,24 +9,26 @@ import { CheckerService, GpuAttackResult } from '../../../data/checker.service';
   templateUrl: './gpu-attack.html',
   styleUrl: './gpu-attack.scss',
 })
-export class GpuAttack {
+export class GpuAttack implements OnInit {
   private checker = inject(CheckerService);
   password = signal('');
-  gpu = signal('NVIDIA RTX5090');
+  gpu = signal('');
+  gpus = signal<string[]>([]);
   result = signal<GpuAttackResult | null>(null);
   loading = signal(false);
   error = signal<string | null>(null);
 
-  gpus = [
-    'NVIDIA RTX5090',
-    'NVIDIA RTX5080',
-    'NVIDIA RTX5070',
-    'NVIDIA RTX5060',
-    'NVIDIA RTX4090Ti',
-    'NVIDIA RTX4060',
-    'NVIDIA RTX4050',
-    'NVIDIA RTX3060',
-  ];
+  async ngOnInit() {
+    try {
+      const list = await this.checker.listGpus();
+      this.gpus.set(list);
+      if (list.length > 0 && !this.gpu()) {
+        this.gpu.set(list[0]);
+      }
+    } catch (e: any) {
+      this.error.set(e?.message ?? 'ดึงรายชื่อ GPU ไม่ได้');
+    }
+  }
 
   async check() {
     if (!this.password()) {

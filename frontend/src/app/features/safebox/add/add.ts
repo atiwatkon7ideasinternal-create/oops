@@ -1,8 +1,9 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { FormsModule, NgForm } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { Router } from '@angular/router';
 import { HeaderApp } from '../../../shared/header-app/header-app';
 import { VaultService } from '../../../data/vault.service';
+import { resizeToDataUrl } from '../../../data/image.util';
 
 @Component({
   selector: 'app-safebox-add',
@@ -10,25 +11,35 @@ import { VaultService } from '../../../data/vault.service';
   templateUrl: './add.html',
   styleUrl: './add.scss',
 })
-export class Add implements OnInit {
-  private route = inject(ActivatedRoute);
+export class Add {
   private vault = inject(VaultService);
   private router = inject(Router);
 
-  prefilledName = signal('');
   loading = signal(false);
   error = signal<string | null>(null);
-
-  ngOnInit() {
-    const app = this.route.snapshot.queryParamMap.get('app');
-    if (app) this.prefilledName.set(app);
-  }
+  picture = signal('');
 
   back() { history.back(); }
 
+  async onPictureSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      this.error.set('กรุณาเลือกไฟล์รูปภาพ');
+      return;
+    }
+    try {
+      this.picture.set(await resizeToDataUrl(file, 256));
+      this.error.set(null);
+    } catch (e: any) {
+      this.error.set(e?.message ?? 'อ่านรูปไม่สำเร็จ');
+    }
+  }
+
   async save(f: NgForm) {
     if (this.loading()) return;
-    const { systemName, username, password, pin, other } = f.value;
+    const { systemName, secretName, secretDescription, username, password, pin, other } = f.value;
     if (!systemName) {
       this.error.set('กรุณากรอกชื่อระบบ');
       return;
@@ -38,9 +49,12 @@ export class Add implements OnInit {
     try {
       await this.vault.create({
         systemName,
+        secretName: secretName || systemName,
+        secretDescription: secretDescription || '',
+        picture: this.picture() || undefined,
         secrets: { username, password, pin, other },
       });
-      this.router.navigate(['/safebox/all']);
+      this.router.navigate(['/safebox']);
     } catch (e: any) {
       this.error.set(e?.error?.error ?? e?.message ?? 'API error');
     } finally {

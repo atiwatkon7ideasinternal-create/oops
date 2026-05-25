@@ -1,7 +1,7 @@
 <app-header-app />
 
 <div class="layout">
-  <app-sidebar [activeGroup]="group()" />
+  <app-sidebar />
 
   <main class="content">
     @if (loading()) {
@@ -10,21 +10,24 @@
       <p class="empty">{{ error() }}</p>
     } @else {
       <div class="grid">
-        <a routerLink="/safebox/add" class="add-card" aria-label="เพิ่มรายการใหม่">
+        <button type="button" class="add-card" (click)="add()" aria-label="เพิ่มแอปใหม่">
           <span class="plus">+</span>
-          <span class="add-label">เพิ่มรายการ</span>
-        </a>
+          <span class="add-label">เพิ่มแอป</span>
+        </button>
 
-        @for (tile of tiles(); track tile.appName) {
-          <button type="button" class="app-card" [class.saved]="!!tile.vid" (click)="open(tile)">
-            <span class="logo">{{ tile.appName.charAt(0).toUpperCase() }}</span>
-            <span class="name">{{ tile.appName }}</span>
-            @if (tile.vid) { <span class="badge">บันทึกแล้ว</span> }
+        @for (entry of entries(); track entry.usersecretId) {
+          <button type="button" class="app-card saved" (click)="open(entry)">
+            @if (entry.picture) {
+              <img class="logo-img" [src]="entry.picture" [alt]="entry.systemName" />
+            } @else {
+              <span class="logo">{{ entry.systemName.charAt(0).toUpperCase() }}</span>
+            }
+            <span class="name">{{ entry.systemName }}</span>
           </button>
         }
 
-        @if (tiles().length === 0) {
-          <p class="empty">ยังไม่มีแอปในหมวด "{{ groupLabel() }}"</p>
+        @if (entries().length === 0) {
+          <p class="empty">ยังไม่มีรายการ — กด + เพื่อเพิ่ม</p>
         }
       </div>
     }

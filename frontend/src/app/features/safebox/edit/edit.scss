@@ -147,3 +147,14 @@
 }
 .btn-clear { border-color: var(--color-red); color: var(--color-red); }
 .btn-clear:hover { background: #fff0f1; }
+
+.preview {
+  display: inline-block;
+  margin-top: 10px;
+  width: 96px;
+  height: 96px;
+  border-radius: 14px;
+  object-fit: cover;
+  background: #f5f6f8;
+  border: 1px solid #e2e5ec;
+}

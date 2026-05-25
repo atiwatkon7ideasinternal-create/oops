@@ -63,8 +63,8 @@ export const routes: Routes = [
   },
   {
     path: 'safebox',
-    pathMatch: 'full',
-    redirectTo: 'safebox/all',
+    canActivate: [requireVault],
+    loadComponent: () => import('./features/safebox/list/list').then((m) => m.List),
   },
   {
     path: 'safebox/add',
@@ -72,14 +72,9 @@ export const routes: Routes = [
     loadComponent: () => import('./features/safebox/add/add').then((m) => m.Add),
   },
   {
-    path: 'safebox/edit/:vid',
+    path: 'safebox/edit/:id',
     canActivate: [requireVault],
     loadComponent: () => import('./features/safebox/edit/edit').then((m) => m.Edit),
-  },
-  {
-    path: 'safebox/:group',
-    canActivate: [requireVault],
-    loadComponent: () => import('./features/safebox/list/list').then((m) => m.List),
   },
   { path: '**', redirectTo: '' },
 ];

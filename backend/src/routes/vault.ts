@@ -1,8 +1,6 @@
 import { Router, type Request } from 'express';
 import { User } from '../models/user.js';
-import { SystemOfUsers } from '../models/systemOfUsers.js';
-import { SecretVault } from '../models/secretVault.js';
-import { SecretAndValue } from '../models/secretAndValue.js';
+import { Usersecret } from '../models/usersecret.js';
 import { requireAuth } from '../middleware/auth.js';
 import { encrypt, decrypt } from '../services/secret-crypto.js';
 
@@ -14,121 +12,116 @@ async function getUserUid(req: Request): Promise<string | null> {
   return user?.uid ?? null;
 }
 
-// ─── List vault entries with decrypted secrets ─────────────────────────
+interface SecretsInput {
+  username?: string;
+  password?: string;
+  pin?: string;
+  qr?: string;
+  other?: string;
+}
+
+function packSecrets(secrets: SecretsInput): string {
+  const cleaned: SecretsInput = {};
+  for (const [k, v] of Object.entries(secrets)) {
+    if (typeof v === 'string' && v.length > 0) (cleaned as any)[k] = v;
+  }
+  return encrypt(JSON.stringify(cleaned));
+}
+
+function unpackSecrets(value: string): SecretsInput {
+  try {
+    return JSON.parse(decrypt(value));
+  } catch {
+    return {};
+  }
+}
+
+function toResponse(doc: any) {
+  return {
+    usersecretId: doc.usersecretId,
+    systemName: doc.systemName,
+    secretName: doc.secretName,
+    secretDescription: doc.secretDescription ?? '',
+    picture: doc.picture ?? '',
+    secrets: unpackSecrets(doc.secretValue),
+    createdAt: doc.createdAt,
+  };
+}
+
 vaultRouter.get('/', async (req, res) => {
   const uid = await getUserUid(req);
   if (!uid) return res.status(404).json({ error: 'User not found' });
 
-  const vaults = await SecretVault.find({ uid }).sort({ createdAt: -1 });
-  const entries = await Promise.all(
-    vaults.map(async (v) => {
-      const sys = await SystemOfUsers.findOne({ systemID: v.systemID });
-      const secrets = await SecretAndValue.find({ systemID: v.systemID });
-      return {
-        vid: v.vid,
-        systemID: v.systemID,
-        systemName: sys?.systemName ?? '',
-        secrets: secrets.map((s) => ({
-          id: s.secretandvalueId,
-          name: s.secretName,
-          value: decrypt(s.value),
-        })),
-        createdAt: (v as any).createdAt,
-      };
-    }),
-  );
-  res.json({ entries });
+  const list = await Usersecret.find({ uid }).sort({ createdAt: -1 });
+  res.json({ entries: list.map(toResponse) });
 });
 
-// ─── Get single entry by vid ───────────────────────────────────────────
-vaultRouter.get('/:vid', async (req, res) => {
+vaultRouter.get('/:id', async (req, res) => {
   const uid = await getUserUid(req);
   if (!uid) return res.status(404).json({ error: 'User not found' });
 
-  const vault = await SecretVault.findOne({ vid: req.params.vid, uid });
-  if (!vault) return res.status(404).json({ error: 'Not found' });
-
-  const sys = await SystemOfUsers.findOne({ systemID: vault.systemID });
-  const secrets = await SecretAndValue.find({ systemID: vault.systemID });
-
-  res.json({
-    vid: vault.vid,
-    systemID: vault.systemID,
-    systemName: sys?.systemName ?? '',
-    secrets: secrets.map((s) => ({
-      id: s.secretandvalueId,
-      name: s.secretName,
-      value: decrypt(s.value),
-    })),
-  });
+  const doc = await Usersecret.findOne({ usersecretId: req.params.id, uid });
+  if (!doc) return res.status(404).json({ error: 'Not found' });
+  res.json(toResponse(doc));
 });
 
-// ─── Create entry ──────────────────────────────────────────────────────
 vaultRouter.post('/', async (req, res) => {
   const uid = await getUserUid(req);
   if (!uid) return res.status(404).json({ error: 'User not found' });
 
-  const { systemName, secrets } = req.body ?? {};
-  if (!systemName || !secrets || typeof secrets !== 'object') {
-    return res.status(400).json({ error: 'systemName + secrets required' });
+  const { systemName, secretName, secretDescription, picture, secrets } = req.body ?? {};
+  if (typeof systemName !== 'string' || !systemName.trim()) {
+    return res.status(400).json({ error: 'systemName required' });
+  }
+  if (!secrets || typeof secrets !== 'object') {
+    return res.status(400).json({ error: 'secrets required' });
+  }
+  if (typeof picture === 'string' && picture.length > 2_000_000) {
+    return res.status(413).json({ error: 'รูปใหญ่เกินไป (เกิน 2MB)' });
   }
 
-  const sys = await SystemOfUsers.create({ systemName });
-  const vault = await SecretVault.create({ uid, systemID: sys.systemID });
+  const doc = await Usersecret.create({
+    uid,
+    systemName: systemName.trim(),
+    secretName: typeof secretName === 'string' && secretName.trim() ? secretName.trim() : systemName.trim(),
+    secretDescription: typeof secretDescription === 'string' ? secretDescription : '',
+    picture: typeof picture === 'string' ? picture : '',
+    secretValue: packSecrets(secrets),
+  });
 
-  const rows = Object.entries(secrets as Record<string, unknown>)
-    .filter(([, value]) => typeof value === 'string' && value.length > 0)
-    .map(([name, value]) => ({
-      secretName: name,
-      value: encrypt(String(value)),
-      systemID: sys.systemID,
-    }));
-  if (rows.length > 0) {
-    for (const r of rows) await SecretAndValue.create(r);
-  }
-
-  res.json({ ok: true, vid: vault.vid });
+  res.json({ ok: true, usersecretId: doc.usersecretId });
 });
 
-// ─── Update entry ──────────────────────────────────────────────────────
-vaultRouter.put('/:vid', async (req, res) => {
+vaultRouter.put('/:id', async (req, res) => {
   const uid = await getUserUid(req);
   if (!uid) return res.status(404).json({ error: 'User not found' });
 
-  const { systemName, secrets } = req.body ?? {};
-  const vault = await SecretVault.findOne({ vid: req.params.vid, uid });
-  if (!vault) return res.status(404).json({ error: 'Not found' });
+  const { systemName, secretName, secretDescription, picture, secrets } = req.body ?? {};
+  const doc = await Usersecret.findOne({ usersecretId: req.params.id, uid });
+  if (!doc) return res.status(404).json({ error: 'Not found' });
 
-  if (systemName) {
-    await SystemOfUsers.updateOne({ systemID: vault.systemID }, { systemName });
+  if (typeof systemName === 'string' && systemName.trim()) doc.systemName = systemName.trim();
+  if (typeof secretName === 'string' && secretName.trim()) doc.secretName = secretName.trim();
+  if (typeof secretDescription === 'string') doc.secretDescription = secretDescription;
+  if (typeof picture === 'string') {
+    if (picture.length > 2_000_000) {
+      return res.status(413).json({ error: 'รูปใหญ่เกินไป (เกิน 2MB)' });
+    }
+    doc.picture = picture;
   }
-
   if (secrets && typeof secrets === 'object') {
-    await SecretAndValue.deleteMany({ systemID: vault.systemID });
-    const rows = Object.entries(secrets as Record<string, unknown>)
-      .filter(([, value]) => typeof value === 'string' && value.length > 0)
-      .map(([name, value]) => ({
-        secretName: name,
-        value: encrypt(String(value)),
-        systemID: vault.systemID,
-      }));
-    for (const r of rows) await SecretAndValue.create(r);
+    doc.secretValue = packSecrets(secrets);
   }
+  await doc.save();
 
   res.json({ ok: true });
 });
 
-// ─── Delete entry ──────────────────────────────────────────────────────
-vaultRouter.delete('/:vid', async (req, res) => {
+vaultRouter.delete('/:id', async (req, res) => {
   const uid = await getUserUid(req);
   if (!uid) return res.status(404).json({ error: 'User not found' });
 
-  const vault = await SecretVault.findOne({ vid: req.params.vid, uid });
-  if (!vault) return res.status(404).json({ error: 'Not found' });
-
-  await SecretAndValue.deleteMany({ systemID: vault.systemID });
-  await SystemOfUsers.deleteOne({ systemID: vault.systemID });
-  await SecretVault.deleteOne({ _id: vault._id });
-
+  const doc = await Usersecret.findOneAndDelete({ usersecretId: req.params.id, uid });
+  if (!doc) return res.status(404).json({ error: 'Not found' });
   res.json({ ok: true });
 });
