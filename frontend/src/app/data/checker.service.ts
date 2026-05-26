@@ -24,6 +24,15 @@ export interface GpuAttackResult {
   rate: number;
 }
 
+export interface GpuOption {
+  gid: number;
+  gpuName: string;
+  brand: string;
+  scryptHashrate: number;
+  memory: number;
+  default: boolean;
+}
+
 @Injectable({ providedIn: 'root' })
 export class CheckerService {
   private http = inject(HttpClient);
@@ -45,9 +54,9 @@ export class CheckerService {
     );
   }
 
-  async listGpus(): Promise<string[]> {
+  async listGpus(): Promise<GpuOption[]> {
     const res = await firstValueFrom(
-      this.http.get<{ gpus: string[] }>(`${this.base}/gpus`),
+      this.http.get<{ gpus: GpuOption[] }>(`${this.base}/gpus`),
     );
     return res.gpus;
   }

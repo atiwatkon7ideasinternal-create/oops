@@ -18,8 +18,10 @@
         [ngModel]="gpu()"
         (ngModelChange)="gpu.set($event)"
       >
-        @for (g of gpus(); track g) {
-          <option [value]="g">{{ g }}</option>
+        @for (g of gpus(); track g.gid) {
+          <option [value]="g.gpuName">
+            {{ g.brand }} {{ g.gpuName }} ({{ g.memory }}GB)
+          </option>
         }
       </select>
     </div>

@@ -1,7 +1,8 @@
 import { Router } from 'express';
 import { calculateEntropy } from '../services/entropy.js';
 import { dictionaryCheck } from '../services/dictionary.js';
-import { gpuAttack, SUPPORTED_GPUS } from '../services/gpu-attack.js';
+import { gpuAttack } from '../services/gpu-attack.js';
+import { Gpu } from '../models/gpu.js';
 
 export const checkerRouter = Router();
 
@@ -22,14 +23,36 @@ checkerRouter.post('/dictionary', async (req, res) => {
   res.json(result);
 });
 
-checkerRouter.post('/gpu-attack', (req, res) => {
+checkerRouter.post('/gpu-attack', async (req, res) => {
   const { password, gpu } = req.body ?? {};
   if (typeof password !== 'string') {
     return res.status(400).json({ error: 'password (string) required' });
   }
-  res.json(gpuAttack(password, typeof gpu === 'string' ? gpu : 'NVIDIA RTX5090'));
+
+  let target = null;
+  if (typeof gpu === 'string' && gpu) {
+    target = await Gpu.findOne({ gpuName: gpu });
+  }
+  if (!target) {
+    target = await Gpu.findOne({ default: true });
+  }
+  if (!target) {
+    return res.status(500).json({ error: 'No GPU configured' });
+  }
+
+  res.json(gpuAttack(password, target.gpuName, target.scryptHashrate));
 });
 
-checkerRouter.get('/gpus', (_req, res) => {
-  res.json({ gpus: SUPPORTED_GPUS });
+checkerRouter.get('/gpus', async (_req, res) => {
+  const gpus = await Gpu.find().sort({ brand: 1, scryptHashrate: -1 });
+  res.json({
+    gpus: gpus.map((g) => ({
+      gid: g.gid,
+      gpuName: g.gpuName,
+      brand: g.brand,
+      scryptHashrate: g.scryptHashrate,
+      memory: g.memory,
+      default: g.default,
+    })),
+  });
 });

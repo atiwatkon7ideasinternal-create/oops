@@ -1,7 +1,7 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { HeaderPublic } from '../../../shared/header-public/header-public';
-import { CheckerService, GpuAttackResult } from '../../../data/checker.service';
+import { CheckerService, GpuAttackResult, GpuOption } from '../../../data/checker.service';
 
 @Component({
   selector: 'app-gpu-attack',
@@ -13,7 +13,7 @@ export class GpuAttack implements OnInit {
   private checker = inject(CheckerService);
   password = signal('');
   gpu = signal('');
-  gpus = signal<string[]>([]);
+  gpus = signal<GpuOption[]>([]);
   result = signal<GpuAttackResult | null>(null);
   loading = signal(false);
   error = signal<string | null>(null);
@@ -22,9 +22,9 @@ export class GpuAttack implements OnInit {
     try {
       const list = await this.checker.listGpus();
       this.gpus.set(list);
-      if (list.length > 0 && !this.gpu()) {
-        this.gpu.set(list[0]);
-      }
+      const def = list.find((g) => g.default);
+      if (def) this.gpu.set(def.gpuName);
+      else if (list.length > 0) this.gpu.set(list[0].gpuName);
     } catch (e: any) {
       this.error.set(e?.message ?? 'ดึงรายชื่อ GPU ไม่ได้');
     }

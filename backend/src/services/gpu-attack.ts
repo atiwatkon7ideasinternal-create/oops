@@ -1,22 +1,11 @@
 /**
- * GPU attack crack-time estimate.
+ * GPU attack crack-time estimate using scrypt hashrate.
  *
- * Assumes brute-force at hashes/sec rate of a given GPU running e.g. MD5 cracking.
- * (Numbers approximate hashcat benchmark figures for popular GPUs cracking
- *  bcrypt / NTLM — actual values vary by hash algorithm; these are middle-ground.)
+ * Calculation steps:
+ *   1. Determine character pool size from password composition
+ *   2. Worst-case combinations = pool^length (use length/2 on average)
+ *   3. Time = combinations / hashrate (H/s)
  */
-export const GPU_RATES: Record<string, number> = {
-  // hashes per second (rough order-of-magnitude vs. NTLM)
-  'NVIDIA RTX5090': 380e9,
-  'NVIDIA RTX5080': 240e9,
-  'NVIDIA RTX5070': 160e9,
-  'NVIDIA RTX5060': 110e9,
-  'NVIDIA RTX4090Ti': 300e9,
-  'NVIDIA RTX4090': 286e9,
-  'NVIDIA RTX4060': 60e9,
-  'NVIDIA RTX4050': 38e9,
-  'NVIDIA RTX3060': 27e9,
-};
 
 function poolSize(password: string): number {
   let pool = 0;
@@ -39,23 +28,19 @@ function formatDuration(seconds: number): string {
   return `${Math.round(years)} ปี`;
 }
 
-export function gpuAttack(password: string, gpu: string) {
+export function gpuAttack(password: string, gpu: string, scryptHashrate: number) {
   if (!password) {
-    return { time: '', seconds: 0, safe: false, gpu, rate: 0 };
+    return { time: '', seconds: 0, safe: false, gpu, rate: scryptHashrate };
   }
 
-  const rate = GPU_RATES[gpu] ?? GPU_RATES['NVIDIA RTX4090'];
   const pool = poolSize(password);
   if (pool === 0) {
-    return { time: '0 วินาที', seconds: 0, safe: false, gpu, rate };
+    return { time: '0 วินาที', seconds: 0, safe: false, gpu, rate: scryptHashrate };
   }
 
-  // Worst-case combinations: pool^length, average half of that.
-  // Cap exponent to avoid Infinity for very long passwords.
   const exp = Math.min(password.length, 64);
   const combinations = Math.pow(pool, exp) / 2;
-  const seconds = combinations / rate;
-
+  const seconds = combinations / scryptHashrate;
   const safe = seconds > 3600 * 24 * 365; // > 1 year considered safe
 
   return {
@@ -63,8 +48,6 @@ export function gpuAttack(password: string, gpu: string) {
     seconds,
     safe,
     gpu,
-    rate,
+    rate: scryptHashrate,
   };
 }
-
-export const SUPPORTED_GPUS = Object.keys(GPU_RATES);
