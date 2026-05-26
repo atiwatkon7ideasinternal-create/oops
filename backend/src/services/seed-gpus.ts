@@ -148,17 +148,22 @@ const SEED: Seed[] = [
 /**
  * Inserts any GPUs from SEED that don't exist yet (matched by gpuName).
  * Existing docs are left untouched, so manually-set fields like `default` survive.
+ *
+ * Fast-path: if DB already has at least SEED.length docs, skip the per-row
+ * existence check entirely. This keeps Vercel cold-start under the 10s limit.
  */
 export async function seedGpusIfEmpty(): Promise<void> {
-  let added = 0;
-  for (const s of SEED) {
-    const existing = await Gpu.findOne({ gpuName: s.gpuName });
-    if (!existing) {
-      await Gpu.create(s);
-      added++;
-    }
-  }
-  if (added > 0) console.log(`🎮 Added ${added} new GPU(s) to catalog`);
+  const count = await Gpu.estimatedDocumentCount();
+  if (count >= SEED.length) return;
+
+  // One query to find which names already exist, then bulk-create the missing ones
+  const names = SEED.map((s) => s.gpuName);
+  const existing = await Gpu.find({ gpuName: { $in: names } }).select('gpuName').lean();
+  const present = new Set(existing.map((g) => g.gpuName));
+  const toInsert = SEED.filter((s) => !present.has(s.gpuName));
+  if (toInsert.length === 0) return;
+  await Gpu.insertMany(toInsert, { ordered: false });
+  console.log(`🎮 Added ${toInsert.length} new GPU(s) to catalog`);
 }
 
 export { SEED as GPU_SEED };
