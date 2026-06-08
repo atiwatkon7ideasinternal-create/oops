@@ -6,7 +6,7 @@ export const requireLogin: CanActivateFn = () => {
   const auth = inject(AuthService);
   const router = inject(Router);
   if (auth.isLoggedIn()) return true;
-  router.navigateByUrl('/register');
+  router.navigateByUrl('/login');
   return false;
 };
 
@@ -16,7 +16,7 @@ export function requireRole(...roles: Role[]): CanActivateFn {
     const router = inject(Router);
     const role = auth.role();
     if (role && roles.includes(role)) return true;
-    router.navigateByUrl('/register');
+    router.navigateByUrl('/login');
     return false;
   };
 }

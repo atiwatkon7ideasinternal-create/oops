@@ -1,7 +1,7 @@
 import { Schema, model, InferSchemaType } from 'mongoose';
 import { randomBytes } from 'node:crypto';
 
-export const OTP_PURPOSES = ['register', 'login', 'reset_motp'] as const;
+export const OTP_PURPOSES = ['register', 'login', 'reset_motp', 'change_email'] as const;
 export type OtpPurpose = (typeof OTP_PURPOSES)[number];
 
 const otpSchema = new Schema(

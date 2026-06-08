@@ -6,7 +6,7 @@ export const requireVault: CanActivateFn = () => {
   const auth = inject(AuthService);
   const router = inject(Router);
   if (!auth.isLoggedIn()) {
-    router.navigateByUrl('/register');
+    router.navigateByUrl('/login');
     return false;
   }
   return true;

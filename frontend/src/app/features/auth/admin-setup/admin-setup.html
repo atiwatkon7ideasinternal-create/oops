@@ -1,0 +1,53 @@
+<main class="page">
+  <div class="card">
+    <h2 class="heading">ตั้งค่าครั้งแรกสำหรับ Admin</h2>
+    <h1 class="logo">OOPS!</h1>
+
+    <p class="prompt">{{ email() }}</p>
+
+    <p class="step">1. สแกน QR ด้วย Google Authenticator</p>
+    @if (qr()) {
+      <div class="qr"><img [src]="qr()" alt="OTP QR" /></div>
+      <p class="secret">หรือกรอก secret: <code>{{ secret() }}</code></p>
+    }
+
+    <p class="step">2. ตั้งรหัสผ่านใหม่</p>
+    <input
+      class="input"
+      type="password"
+      placeholder="รหัสผ่านใหม่ (≥ 8 ตัว)"
+      [ngModel]="newPassword()"
+      (ngModelChange)="newPassword.set($event)"
+    />
+    <input
+      class="input"
+      type="password"
+      placeholder="ยืนยันรหัสผ่านใหม่"
+      [ngModel]="confirmPassword()"
+      (ngModelChange)="confirmPassword.set($event)"
+    />
+
+    <p class="step">3. กรอก M-OTP 6 หลักจาก Authenticator</p>
+    <input
+      class="input"
+      placeholder="M-OTP (6 หลัก)"
+      maxlength="6"
+      inputmode="numeric"
+      [ngModel]="token()"
+      (ngModelChange)="token.set($event)"
+      (keyup.enter)="submit()"
+    />
+
+    @if (error()) {
+      <p class="form-error">{{ error() }}</p>
+    }
+
+    <div class="actions">
+      <button type="button" class="btn-submit" (click)="submit()" [disabled]="loading()">
+        {{ loading() ? 'กำลังบันทึก...' : 'ยืนยันและเข้าสู่ระบบ' }}
+      </button>
+    </div>
+
+    <a routerLink="/login" class="btn-back">ยกเลิก</a>
+  </div>
+</main>

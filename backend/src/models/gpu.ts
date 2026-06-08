@@ -8,8 +8,6 @@ const gpuSchema = new Schema(
     brand: { type: String, required: true, maxlength: 50 },
     scryptHashrate: { type: Number, required: true },
     memory: { type: Number, required: true },
-    default: { type: Boolean, required: true, default: false, index: true },
-    estimated: { type: Boolean, required: true, default: false },
   },
   { timestamps: true },
 );

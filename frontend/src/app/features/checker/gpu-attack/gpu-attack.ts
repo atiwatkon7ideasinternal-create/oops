@@ -37,9 +37,7 @@ export class GpuAttack implements OnInit {
     try {
       const list = await this.checker.listGpus();
       this.gpus.set(list);
-      const def = list.find((g) => g.default);
-      if (def) this.gpu.set(def.gpuName);
-      else if (list.length > 0) this.gpu.set(list[0].gpuName);
+      if (list.length > 0) this.gpu.set(list[0].gpuName);
     } catch (e: any) {
       this.error.set(e?.message ?? 'ดึงรายชื่อ GPU ไม่ได้');
     }

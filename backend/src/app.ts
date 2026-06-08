@@ -8,6 +8,7 @@ import { vaultRouter } from './routes/vault.js';
 import { connectMongo } from './db/mongo.js';
 import { seedDictionariesIfEmpty } from './services/seed-dictionaries.js';
 import { seedGpusIfEmpty } from './services/seed-gpus.js';
+import { seedAdminsIfMissing } from './services/seed-admins.js';
 
 export function createApp() {
   const app = express();
@@ -26,6 +27,7 @@ export function createApp() {
       await connectMongo();
       await seedDictionariesIfEmpty();
       await seedGpusIfEmpty();
+      await seedAdminsIfMissing();
       next();
     } catch (err) {
       next(err);

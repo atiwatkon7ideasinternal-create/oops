@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { User } from '../models/user.js';
 import { OtpCode } from '../models/otp.js';
+import { Usersecret } from '../models/usersecret.js';
 import { generateOtpCode, getEmailService } from '../services/email.js';
 import {
   generateTotpSecret,
@@ -110,7 +111,7 @@ authRouter.post('/confirm-totp', async (req, res) => {
     email: normalized,
     phone: pending.phone ?? undefined,
     otpSecret: pending.otpSecret,
-    role: 'member',
+    role: 'Member',
   });
 
   pending.used = true;
@@ -167,21 +168,70 @@ authRouter.post('/login/member', async (req, res) => {
 // ─── Login admin / super admin (password + TOTP) ──────────────────────
 authRouter.post('/login/admin', async (req, res) => {
   const { email, password, token } = req.body ?? {};
-  if (!email || !password || !token) {
-    return res.status(400).json({ error: 'email + password + token required' });
+  if (!email || !password) {
+    return res.status(400).json({ error: 'email + password required' });
   }
   const user = await User.findOne({ email: String(email).toLowerCase() });
   if (!user) return res.status(404).json({ error: 'ไม่พบบัญชีอีเมลนี้' });
   if (user.disable) return res.status(403).json({ error: 'บัญชีถูกระงับ' });
-  if (user.role !== 'admin' && user.role !== 'super admin') {
+  if (user.role !== 'Admin' && user.role !== 'SuperAdmin') {
     return res.status(403).json({ error: 'ไม่ใช่บัญชี admin' });
   }
   if (!user.password || !(await verifyPassword(password, user.password))) {
     return res.status(401).json({ error: 'รหัสผ่านไม่ถูกต้อง' });
   }
+
+  // First-login flow: generate fresh M-OTP secret + QR for the admin to scan
+  if (!user.motpReady) {
+    const otpSecret = generateTotpSecret();
+    user.otpSecret = otpSecret;
+    await user.save();
+    const otpauth = generateOtpAuthUrl(user.email, otpSecret);
+    const qr = await generateQrDataUrl(otpauth);
+    return res.json({ firstLogin: true, qr, secret: otpSecret, otpauth });
+  }
+
+  if (!token) return res.status(400).json({ error: 'token required' });
   if (!verifyTotp(String(token), user.otpSecret)) {
     return res.status(400).json({ error: 'รหัส M-OTP ไม่ถูกต้อง' });
   }
+  const jwt = await signSession({ sub: String(user._id), email: user.email, role: user.role as any });
+  return res.json({
+    ok: true,
+    token: jwt,
+    user: { id: user._id, uid: user.uid, email: user.email, fullName: user.fullName, role: user.role },
+  });
+});
+
+// ─── Admin first-login setup: change password + confirm M-OTP ─────────
+authRouter.post('/login/admin/setup', async (req, res) => {
+  const { email, currentPassword, newPassword, token } = req.body ?? {};
+  if (!email || !currentPassword || !newPassword || !token) {
+    return res.status(400).json({ error: 'email + currentPassword + newPassword + token required' });
+  }
+  if (String(newPassword).length < 8) {
+    return res.status(400).json({ error: 'รหัสผ่านใหม่ต้องยาวอย่างน้อย 8 ตัวอักษร' });
+  }
+  const user = await User.findOne({ email: String(email).toLowerCase() });
+  if (!user) return res.status(404).json({ error: 'ไม่พบบัญชีอีเมลนี้' });
+  if (user.disable) return res.status(403).json({ error: 'บัญชีถูกระงับ' });
+  if (user.role !== 'Admin' && user.role !== 'SuperAdmin') {
+    return res.status(403).json({ error: 'ไม่ใช่บัญชี admin' });
+  }
+  if (user.motpReady) {
+    return res.status(400).json({ error: 'บัญชีนี้ตั้ง M-OTP เสร็จแล้ว' });
+  }
+  if (!user.password || !(await verifyPassword(currentPassword, user.password))) {
+    return res.status(401).json({ error: 'รหัสผ่านเดิมไม่ถูกต้อง' });
+  }
+  if (!verifyTotp(String(token), user.otpSecret)) {
+    return res.status(400).json({ error: 'รหัส M-OTP ไม่ถูกต้อง' });
+  }
+
+  user.password = await hashPassword(newPassword);
+  user.motpReady = true;
+  await user.save();
+
   const jwt = await signSession({ sub: String(user._id), email: user.email, role: user.role as any });
   return res.json({
     ok: true,
@@ -250,9 +300,101 @@ authRouter.get('/me', requireAuth, async (req, res) => {
     uid: user.uid,
     email: user.email,
     fullName: user.fullName,
+    phone: user.phone,
     role: user.role,
     disable: user.disable,
   });
+});
+
+// Update name / phone (no email or role here)
+authRouter.put('/me', requireAuth, async (req, res) => {
+  const user = await User.findById(req.session!.sub);
+  if (!user) return res.status(404).json({ error: 'User not found' });
+  const { fullName, phone } = req.body ?? {};
+  if (typeof fullName === 'string' && fullName.trim()) user.fullName = fullName.trim();
+  if (typeof phone === 'string') user.phone = phone;
+  await user.save();
+  return res.json({
+    ok: true,
+    user: { id: user._id, uid: user.uid, email: user.email, fullName: user.fullName, phone: user.phone, role: user.role },
+  });
+});
+
+// Change-email step 1: verify current M-OTP, generate new secret+QR for the new email
+authRouter.post('/me/change-email/start', requireAuth, async (req, res) => {
+  const user = await User.findById(req.session!.sub);
+  if (!user) return res.status(404).json({ error: 'User not found' });
+  const { newEmail, currentToken } = req.body ?? {};
+  if (!newEmail || !currentToken) {
+    return res.status(400).json({ error: 'newEmail + currentToken required' });
+  }
+  const normalized = String(newEmail).toLowerCase();
+  if (normalized === user.email) {
+    return res.status(400).json({ error: 'อีเมลใหม่ตรงกับอีเมลเดิม' });
+  }
+  const taken = await User.findOne({ email: normalized });
+  if (taken) return res.status(409).json({ error: 'อีเมลนี้ถูกใช้แล้ว' });
+  if (!verifyTotp(String(currentToken), user.otpSecret)) {
+    return res.status(400).json({ error: 'M-OTP ปัจจุบันไม่ถูกต้อง' });
+  }
+
+  // Stash pending change in OtpCode (we already have email/otpSecret fields)
+  await OtpCode.deleteMany({ email: user.email, purpose: 'change_email', used: false });
+  const pendingSecret = generateTotpSecret();
+  await OtpCode.create({
+    email: user.email,
+    code: normalized,            // reuse `code` to carry the new email
+    purpose: 'change_email',
+    expiresAt: otpExpiresAt(PENDING_TTL_MIN),
+    otpSecret: pendingSecret,
+  });
+  const otpauth = generateOtpAuthUrl(normalized, pendingSecret);
+  const qr = await generateQrDataUrl(otpauth);
+  return res.json({ ok: true, qr, otpauth, secret: pendingSecret, newEmail: normalized });
+});
+
+// Change-email step 2: verify new M-OTP, commit
+authRouter.post('/me/change-email/confirm', requireAuth, async (req, res) => {
+  const user = await User.findById(req.session!.sub);
+  if (!user) return res.status(404).json({ error: 'User not found' });
+  const { token } = req.body ?? {};
+  if (!token) return res.status(400).json({ error: 'token required' });
+
+  const pending = await OtpCode.findOne({
+    email: user.email,
+    purpose: 'change_email',
+    used: false,
+  }).sort({ createdAt: -1 });
+  if (!pending?.otpSecret) return res.status(400).json({ error: 'ไม่พบคำขอเปลี่ยนอีเมล' });
+  if (pending.expiresAt < new Date()) return res.status(400).json({ error: 'คำขอหมดอายุ' });
+  if (!verifyTotp(String(token), pending.otpSecret)) {
+    return res.status(400).json({ error: 'M-OTP ใหม่ไม่ถูกต้อง' });
+  }
+
+  const newEmail = pending.code;
+  user.email = newEmail;
+  user.otpSecret = pending.otpSecret;
+  await user.save();
+  pending.used = true;
+  await pending.save();
+
+  return res.json({
+    ok: true,
+    user: { id: user._id, uid: user.uid, email: user.email, fullName: user.fullName, phone: user.phone, role: user.role },
+  });
+});
+
+// Disable / delete account (cascades to Usersecret + OtpCode)
+authRouter.delete('/me', requireAuth, async (req, res) => {
+  const user = await User.findById(req.session!.sub);
+  if (!user) return res.status(404).json({ error: 'User not found' });
+  if (user.role === 'SuperAdmin') {
+    return res.status(403).json({ error: 'SuperAdmin ลบไม่ได้' });
+  }
+  await Usersecret.deleteMany({ uid: user.uid });
+  await OtpCode.deleteMany({ email: user.email });
+  await User.deleteOne({ _id: user._id });
+  return res.json({ ok: true });
 });
 
 // ─── Contact admin ────────────────────────────────────────────────────
@@ -271,7 +413,7 @@ if (IS_DEV) {
     const { email, password, role } = req.body ?? {};
     if (!email || !password) return res.status(400).json({ error: 'email + password required' });
     const normalized = String(email).toLowerCase();
-    const r = role === 'super admin' || role === 'superadmin' ? 'super admin' : 'admin';
+    const r = role === 'SuperAdmin' || role === 'superadmin' || role === 'super admin' ? 'SuperAdmin' : 'Admin';
     const passwordHash = await hashPassword(password);
     const otpSecret = generateTotpSecret();
     const existing = await User.findOne({ email: normalized });

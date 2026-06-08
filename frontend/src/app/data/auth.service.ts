@@ -2,19 +2,36 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 
-export type Role = 'member' | 'admin' | 'super admin';
+export type Role = 'Member' | 'Admin' | 'SuperAdmin';
 
 export interface AuthUser {
   id: string;
+  uid?: string;
   email: string;
   fullName: string;
+  phone?: string;
   role: Role;
+}
+
+export interface ChangeEmailQrResp {
+  ok: true;
+  qr: string;
+  otpauth: string;
+  secret: string;
+  newEmail: string;
 }
 
 interface TokenResp {
   ok: true;
   token: string;
   user: AuthUser;
+}
+
+export interface AdminFirstLoginResp {
+  firstLogin: true;
+  qr: string;
+  secret: string;
+  otpauth: string;
 }
 
 interface QrResp {
@@ -96,9 +113,27 @@ export class AuthService {
     return res;
   }
 
-  async loginAdmin(email: string, password: string, token: string) {
+  async loginAdmin(email: string, password: string, token?: string): Promise<TokenResp | AdminFirstLoginResp> {
     const res = await firstValueFrom(
-      this.http.post<TokenResp>(`${this.base}/login/admin`, { email, password, token }),
+      this.http.post<TokenResp | AdminFirstLoginResp>(
+        `${this.base}/login/admin`,
+        { email, password, token: token || undefined },
+      ),
+    );
+    if ('firstLogin' in res && res.firstLogin) return res;
+    const ok = res as TokenResp;
+    this.persist(ok.token, ok.user);
+    return ok;
+  }
+
+  async adminSetup(email: string, currentPassword: string, newPassword: string, token: string) {
+    const res = await firstValueFrom(
+      this.http.post<TokenResp>(`${this.base}/login/admin/setup`, {
+        email,
+        currentPassword,
+        newPassword,
+        token,
+      }),
     );
     this.persist(res.token, res.user);
     return res;
@@ -129,5 +164,50 @@ export class AuthService {
     localStorage.removeItem(STORAGE_KEY + '_user');
     this._token.set(null);
     this._user.set(null);
+  }
+
+  // ─── Profile ─────────────────────────────────────────────────────────
+  async getMe(): Promise<AuthUser> {
+    return firstValueFrom(this.http.get<AuthUser>(`${this.base}/me`));
+  }
+
+  async updateMe(input: { fullName?: string; phone?: string }): Promise<AuthUser> {
+    const res = await firstValueFrom(
+      this.http.put<{ ok: true; user: AuthUser }>(`${this.base}/me`, input),
+    );
+    const cur = this._user();
+    if (cur) {
+      const merged = { ...cur, ...res.user };
+      this._user.set(merged);
+      localStorage.setItem(STORAGE_KEY + '_user', JSON.stringify(merged));
+    }
+    return res.user;
+  }
+
+  async changeEmailStart(newEmail: string, currentToken: string): Promise<ChangeEmailQrResp> {
+    return firstValueFrom(
+      this.http.post<ChangeEmailQrResp>(`${this.base}/me/change-email/start`, {
+        newEmail,
+        currentToken,
+      }),
+    );
+  }
+
+  async changeEmailConfirm(token: string): Promise<AuthUser> {
+    const res = await firstValueFrom(
+      this.http.post<{ ok: true; user: AuthUser }>(`${this.base}/me/change-email/confirm`, { token }),
+    );
+    const cur = this._user();
+    if (cur) {
+      const merged = { ...cur, ...res.user };
+      this._user.set(merged);
+      localStorage.setItem(STORAGE_KEY + '_user', JSON.stringify(merged));
+    }
+    return res.user;
+  }
+
+  async deleteMe(): Promise<void> {
+    await firstValueFrom(this.http.delete<{ ok: true }>(`${this.base}/me`));
+    this.logout();
   }
 }

@@ -1,6 +1,5 @@
-import { Component, computed, effect, inject, signal } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { Component, inject, signal, OnInit } from '@angular/core';
+import { Router } from '@angular/router';
 import { HeaderApp } from '../../../shared/header-app/header-app';
 import { Sidebar } from '../../../shared/sidebar/sidebar';
 import { VaultService, VaultEntry } from '../../../data/vault.service';
@@ -11,29 +10,23 @@ import { VaultService, VaultEntry } from '../../../data/vault.service';
   templateUrl: './list.html',
   styleUrl: './list.scss',
 })
-export class List {
-  private route = inject(ActivatedRoute);
+export class List implements OnInit {
   private router = inject(Router);
   private vault = inject(VaultService);
-
-  private params = toSignal(this.route.paramMap, { initialValue: this.route.snapshot.paramMap });
-  category = computed<string>(() => this.params().get('category') ?? 'all');
 
   entries = signal<VaultEntry[]>([]);
   loading = signal(false);
   error = signal<string | null>(null);
 
-  constructor() {
-    effect(() => {
-      void this.load(this.category());
-    });
+  async ngOnInit() {
+    await this.load();
   }
 
-  private async load(category: string) {
+  private async load() {
     this.loading.set(true);
     this.error.set(null);
     try {
-      this.entries.set(await this.vault.list(category));
+      this.entries.set(await this.vault.list());
     } catch (e: any) {
       this.error.set(e?.error?.error ?? e?.message ?? 'API error');
     } finally {

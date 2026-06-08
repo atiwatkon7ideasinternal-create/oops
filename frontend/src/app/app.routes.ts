@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { requireVault } from './data/vault.guards';
+import { requireLogin } from './data/auth.guards';
 
 export const routes: Routes = [
   {
@@ -9,6 +10,7 @@ export const routes: Routes = [
   },
   {
     path: 'checker/dictionary',
+    canActivate: [requireLogin],
     loadComponent: () =>
       import('./features/checker/dictionary/dictionary').then((m) => m.Dictionary),
   },
@@ -17,7 +19,12 @@ export const routes: Routes = [
     loadComponent: () => import('./features/checker/entropy/entropy').then((m) => m.Entropy),
   },
   {
+    path: 'aes-demo',
+    loadComponent: () => import('./features/aes-demo/aes-demo').then((m) => m.AesDemo),
+  },
+  {
     path: 'checker/gpu-attack',
+    canActivate: [requireLogin],
     loadComponent: () =>
       import('./features/checker/gpu-attack/gpu-attack').then((m) => m.GpuAttack),
   },
@@ -38,6 +45,11 @@ export const routes: Routes = [
     path: 'login/qr',
     loadComponent: () =>
       import('./features/auth/login-qr/login-qr').then((m) => m.LoginQr),
+  },
+  {
+    path: 'login/admin-setup',
+    loadComponent: () =>
+      import('./features/auth/admin-setup/admin-setup').then((m) => m.AdminSetup),
   },
   {
     path: 'reset/email',
@@ -62,6 +74,11 @@ export const routes: Routes = [
       import('./features/auth/contact-admin/contact-admin').then((m) => m.ContactAdmin),
   },
   {
+    path: 'profile',
+    canActivate: [requireLogin],
+    loadComponent: () => import('./features/profile/profile').then((m) => m.Profile),
+  },
+  {
     path: 'safebox',
     canActivate: [requireVault],
     loadComponent: () => import('./features/safebox/list/list').then((m) => m.List),
@@ -75,11 +92,6 @@ export const routes: Routes = [
     path: 'safebox/edit/:id',
     canActivate: [requireVault],
     loadComponent: () => import('./features/safebox/edit/edit').then((m) => m.Edit),
-  },
-  {
-    path: 'safebox/:category',
-    canActivate: [requireVault],
-    loadComponent: () => import('./features/safebox/list/list').then((m) => m.List),
   },
   { path: '**', redirectTo: '' },
 ];

@@ -1,0 +1,107 @@
+<app-header-public />
+
+<main class="page">
+  <h1 class="title">AES-256-GCM Demo</h1>
+  <p class="note">
+    ** สาธิตการเข้ารหัส/ถอดรหัสด้วย AES-256-GCM โดยใช้ Passphrase →
+    PBKDF2 (100,000 รอบ, SHA-256) → AES-256-GCM **
+  </p>
+
+  <div class="panels">
+    <!-- ENCRYPT -->
+    <section class="panel">
+      <h2>🔒 Encrypt</h2>
+
+      <label class="step"><span class="num">1</span> กำหนด Passphrase</label>
+      <input
+        type="password"
+        class="field"
+        placeholder="passphrase"
+        [ngModel]="encPass()"
+        (ngModelChange)="encPass.set($event)"
+      />
+
+      <label class="step"><span class="num">2</span> บันทึกข้อมูล (plaintext)</label>
+      <textarea
+        class="field area"
+        placeholder="ข้อมูลที่ต้องการเข้ารหัส..."
+        [ngModel]="encPlain()"
+        (ngModelChange)="encPlain.set($event)"
+      ></textarea>
+
+      <button type="button" class="btn-action" (click)="runEncrypt()">เข้ารหัส</button>
+
+      @if (encError()) {
+        <p class="form-error">{{ encError() }}</p>
+      }
+
+      @if (encCipher()) {
+        <div class="output">
+          <label class="step"><span class="num">3</span> Passphrase ถูกแปลงเป็น Key (PBKDF2 + salt)</label>
+          <div class="line"><span>Salt (16 bytes)</span><code>{{ encSalt() }}</code></div>
+          <div class="line"><span>Derived Key (32 bytes)</span><code>{{ encKeyHex() }}</code></div>
+
+          <label class="step"><span class="num">4</span> ข้อมูลถูกเข้ารหัส (AES-256-GCM)</label>
+          <div class="line"><span>IV (12 bytes)</span><code>{{ encIv() }}</code></div>
+          <div class="line"><span>Ciphertext</span><code>{{ encCipher() }}</code></div>
+          <div class="line"><span>Auth Tag (16 bytes)</span><code>{{ encTag() }}</code></div>
+          <div class="line packed"><span>Packed (Base64)</span><code>{{ encPacked() }}</code></div>
+
+          <button type="button" class="btn-link" (click)="copyPackedToDecrypt()">→ ใช้ปลายทางใน Decrypt</button>
+        </div>
+      }
+    </section>
+
+    <!-- DECRYPT -->
+    <section class="panel">
+      <h2>🔓 Decrypt</h2>
+
+      <label class="step"><span class="num">5</span> ใส่ Passphrase</label>
+      <input
+        type="password"
+        class="field"
+        placeholder="passphrase"
+        [ngModel]="decPass()"
+        (ngModelChange)="decPass.set($event)"
+      />
+
+      <label class="step">Packed ciphertext (Base64)</label>
+      <textarea
+        class="field area mono"
+        placeholder="วาง packed string จากด้านซ้าย"
+        [ngModel]="decPacked()"
+        (ngModelChange)="decPacked.set($event)"
+      ></textarea>
+
+      <button type="button" class="btn-action" (click)="runDecrypt()">ถอดรหัส</button>
+
+      @if (decError()) {
+        <p class="form-error">{{ decError() }}</p>
+      }
+
+      @if (decKeyHex()) {
+        <div class="output">
+          <label class="step"><span class="num">6</span> Derived Key + ข้อมูลที่ถอดได้</label>
+          <div class="line"><span>Derived Key</span><code>{{ decKeyHex() }}</code></div>
+          @if (decPlain()) {
+            <div class="line plain">
+              <span>Plaintext</span>
+              <code class="plain-value">{{ decPlain() }}</code>
+            </div>
+          }
+        </div>
+      }
+    </section>
+  </div>
+
+  <section class="explain">
+    <h3>หลักการทำงาน</h3>
+    <ol>
+      <li><b>PBKDF2:</b> แปลง passphrase + salt → AES-256 key (slow function, กัน brute-force)</li>
+      <li><b>Salt 16 bytes สุ่ม:</b> ทำให้ passphrase เดียวกัน → key ต่างกัน (กัน rainbow table)</li>
+      <li><b>IV 12 bytes สุ่ม:</b> เพื่อให้ ciphertext ของ plaintext เดียวกัน ออกมาไม่เหมือนกันทุกครั้ง</li>
+      <li><b>Auth Tag 16 bytes:</b> เพื่อตรวจสอบความถูกต้อง — ถ้า ciphertext ถูกแก้ไข decrypt จะ fail</li>
+      <li><b>Packed format:</b> <code>salt(16) || iv(12) || ciphertext || tag(16)</code> → Base64 → 1 string</li>
+    </ol>
+  </section>
+</main>

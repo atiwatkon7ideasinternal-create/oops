@@ -12,7 +12,7 @@ function secretKey(): Uint8Array {
 export interface SessionPayload {
   sub: string; // user id
   email: string;
-  role: 'member' | 'admin' | 'super admin';
+  role: 'Member' | 'Admin' | 'SuperAdmin';
 }
 
 export async function signSession(payload: SessionPayload): Promise<string> {

@@ -12,7 +12,13 @@
   --logo-size: 1.75rem;
 }
 
-.logout {
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.header-link, .logout {
   background: transparent;
   border: 0;
   color: #fff;
@@ -21,8 +27,10 @@
   align-items: center;
   gap: 2px;
   padding: 4px 8px;
+  text-decoration: none;
+  cursor: pointer;
 }
-.logout svg {
+.header-link svg, .logout svg {
   background: #fff;
   color: var(--color-primary);
   border-radius: 50%;
@@ -30,6 +38,7 @@
   width: 36px;
   height: 36px;
 }
+.header-link:hover svg, .logout:hover svg { opacity: 0.9; }
 .label {
   font-size: 0.8rem;
   color: #fff;

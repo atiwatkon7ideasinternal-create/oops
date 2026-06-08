@@ -36,7 +36,7 @@
     }
     <input
       class="input"
-      placeholder="M-OTP (6 หลัก)"
+      [placeholder]="mode() === 'admin' ? 'M-OTP (เว้นว่างถ้า login ครั้งแรก)' : 'M-OTP (6 หลัก)'"
       maxlength="6"
       inputmode="numeric"
       [ngModel]="motp()"

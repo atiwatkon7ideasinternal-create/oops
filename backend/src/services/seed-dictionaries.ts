@@ -1,14 +1,22 @@
 import { Dictionary } from '../models/dictionary.js';
 
-const SEED = [
+interface Seed {
+  dictname: string;
+  dictfile: string;
+}
+
+const SEED: Seed[] = [
   { dictname: 'rockyou', dictfile: 'rockyou.txt' },
+  { dictname: 'dropbox', dictfile: 'dropbox.txt' },
 ];
 
 export async function seedDictionariesIfEmpty(): Promise<void> {
-  const count = await Dictionary.estimatedDocumentCount();
-  if (count > 0) return;
+  let added = 0;
   for (const s of SEED) {
+    const existing = await Dictionary.findOne({ dictname: s.dictname });
+    if (existing) continue;
     await Dictionary.create(s);
+    added++;
   }
-  console.log(`📖 Seeded ${SEED.length} dictionaries`);
+  if (added > 0) console.log(`📖 Seeded ${added} dictionary(s)`);
 }

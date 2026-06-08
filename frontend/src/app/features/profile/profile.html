@@ -1,0 +1,108 @@
+<app-header-app />
+
+<main class="page">
+  @if (loading()) {
+    <p class="loading">กำลังโหลด...</p>
+  } @else if (user(); as u) {
+    <div class="card">
+      <div class="avatar">{{ initials() }}</div>
+      <h1 class="name">{{ u.fullName }}</h1>
+      <p class="role">{{ u.role }}</p>
+
+      @if (!editing()) {
+        <div class="info">
+          <div class="row"><span>UID</span><code>{{ u.uid }}</code></div>
+          <div class="row"><span>อีเมล</span><b>{{ u.email }}</b></div>
+          <div class="row"><span>เบอร์โทรศัพท์</span><b>{{ u.phone || '—' }}</b></div>
+        </div>
+
+        <div class="actions">
+          <button class="btn-primary" (click)="startEdit()">แก้ไขข้อมูล</button>
+          <button class="btn-secondary" (click)="openEmailDialog()">เปลี่ยนอีเมล</button>
+          <button class="btn-danger" (click)="openDeleteConfirm()">ปิดใช้งานบัญชี</button>
+        </div>
+      } @else {
+        <div class="form">
+          <label class="field">
+            <span>ชื่อ-นามสกุล</span>
+            <input [ngModel]="fullName()" (ngModelChange)="fullName.set($event)" />
+          </label>
+          <label class="field">
+            <span>เบอร์โทรศัพท์</span>
+            <input [ngModel]="phone()" (ngModelChange)="phone.set($event)" />
+          </label>
+          <p class="hint">เปลี่ยนอีเมล: กด "ยกเลิก" แล้วกดปุ่ม "เปลี่ยนอีเมล"</p>
+          <div class="actions">
+            <button class="btn-secondary" (click)="cancelEdit()" [disabled]="saving()">ยกเลิก</button>
+            <button class="btn-primary" (click)="saveEdit()" [disabled]="saving()">
+              {{ saving() ? 'กำลังบันทึก...' : 'บันทึก' }}
+            </button>
+          </div>
+        </div>
+      }
+
+      @if (error()) {
+        <p class="form-error">{{ error() }}</p>
+      }
+    </div>
+  }
+
+  <!-- Change Email Dialog -->
+  @if (emailDialogOpen()) {
+    <div class="modal-backdrop" (click)="closeEmailDialog()">
+      <div class="modal" (click)="$event.stopPropagation()">
+        <h2>เปลี่ยนอีเมล</h2>
+
+        @if (emailStep() === 1) {
+          <p class="prompt">กรอกอีเมลใหม่และยืนยันด้วย M-OTP ปัจจุบัน</p>
+          <label class="field">
+            <span>อีเมลใหม่</span>
+            <input type="email" [ngModel]="newEmail()" (ngModelChange)="newEmail.set($event)" />
+          </label>
+          <label class="field">
+            <span>M-OTP ปัจจุบัน (6 หลัก)</span>
+            <input maxlength="6" inputmode="numeric" [ngModel]="currentToken()" (ngModelChange)="currentToken.set($event)" />
+          </label>
+          @if (emailError()) { <p class="form-error">{{ emailError() }}</p> }
+          <div class="actions">
+            <button class="btn-secondary" (click)="closeEmailDialog()" [disabled]="emailWorking()">ยกเลิก</button>
+            <button class="btn-primary" (click)="submitEmailStart()" [disabled]="emailWorking()">
+              {{ emailWorking() ? 'กำลังตรวจ...' : 'ถัดไป' }}
+            </button>
+          </div>
+        } @else {
+          <p class="prompt">สแกน QR ด้วย Google Authenticator แล้วใส่ M-OTP จากแอป</p>
+          <div class="qr"><img [src]="changeQr()" alt="QR" /></div>
+          <p class="secret">Secret: <code>{{ changeSecret() }}</code></p>
+          <label class="field">
+            <span>M-OTP ใหม่ (6 หลัก)</span>
+            <input maxlength="6" inputmode="numeric" [ngModel]="newToken()" (ngModelChange)="newToken.set($event)" />
+          </label>
+          @if (emailError()) { <p class="form-error">{{ emailError() }}</p> }
+          <div class="actions">
+            <button class="btn-secondary" (click)="closeEmailDialog()" [disabled]="emailWorking()">ยกเลิก</button>
+            <button class="btn-primary" (click)="submitEmailConfirm()" [disabled]="emailWorking()">
+              {{ emailWorking() ? 'กำลังบันทึก...' : 'ยืนยัน' }}
+            </button>
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- Delete Confirm Dialog -->
+  @if (deleteConfirmOpen()) {
+    <div class="modal-backdrop" (click)="closeDeleteConfirm()">
+      <div class="modal" (click)="$event.stopPropagation()">
+        <h2>ปิดใช้งานบัญชี</h2>
+        <p class="warning">⚠️ การลบบัญชีจะ <b>ลบข้อมูลทั้งหมด</b> ของคุณออกจากระบบ — ไม่สามารถกู้คืนได้</p>
+        <div class="actions">
+          <button class="btn-secondary" (click)="closeDeleteConfirm()" [disabled]="deleting()">ยกเลิก</button>
+          <button class="btn-danger" (click)="confirmDelete()" [disabled]="deleting()">
+            {{ deleting() ? 'กำลังลบ...' : 'ยืนยันลบบัญชี' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</main>

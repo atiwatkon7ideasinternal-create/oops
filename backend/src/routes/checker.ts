@@ -34,7 +34,7 @@ checkerRouter.post('/gpu-attack', async (req, res) => {
     target = await Gpu.findOne({ gpuName: gpu });
   }
   if (!target) {
-    target = await Gpu.findOne({ default: true });
+    target = await Gpu.findOne().sort({ scryptHashrate: -1 });
   }
   if (!target) {
     return res.status(500).json({ error: 'No GPU configured' });
@@ -52,7 +52,6 @@ checkerRouter.get('/gpus', async (_req, res) => {
       brand: g.brand,
       scryptHashrate: g.scryptHashrate,
       memory: g.memory,
-      default: g.default,
     })),
   });
 });

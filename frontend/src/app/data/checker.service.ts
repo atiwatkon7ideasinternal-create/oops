@@ -30,7 +30,6 @@ export interface GpuOption {
   brand: string;
   scryptHashrate: number;
   memory: number;
-  default: boolean;
 }
 
 @Injectable({ providedIn: 'root' })
