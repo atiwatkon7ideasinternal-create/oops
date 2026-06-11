@@ -100,6 +100,11 @@ export const routes: Routes = [
     loadComponent: () => import('./features/safebox/edit/edit').then((m) => m.Edit),
   },
   {
+    path: 'safebox/view/:id',
+    canActivate: [requireVault],
+    loadComponent: () => import('./features/safebox/view/view').then((m) => m.View),
+  },
+  {
     path: 'safebox/:category',
     canActivate: [requireVault],
     loadComponent: () => import('./features/safebox/list/list').then((m) => m.List),

@@ -1,9 +1,10 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, computed, inject, signal, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { HeaderApp } from '../../../shared/header-app/header-app';
 import { VaultService, VaultEntry, SAFEBOX_CATEGORIES } from '../../../data/vault.service';
 import { resizeToDataUrl } from '../../../data/image.util';
+import { aesEncrypt, AesPackedParts } from '../../../data/aes.util';
 
 @Component({
   selector: 'app-safebox-edit',
@@ -28,9 +29,16 @@ export class Edit implements OnInit {
   picture = signal('');
   categories = SAFEBOX_CATEGORIES;
   username = signal('');
-  password = signal('');
-  pin = signal('');
   other = signal('');
+
+  // encryption panel state
+  encPass = signal('');
+  encPlain = signal('');
+  encResult = signal<AesPackedParts | null>(null);
+  encError = signal<string | null>(null);
+  encryptedBlob = signal('');
+
+  hasSavedBlob = computed(() => this.entry()?.secrets.encryptedBlob && this.entry()!.secrets.encryptedBlob!.length > 0);
 
   async ngOnInit() {
     const id = this.route.snapshot.paramMap.get('id');
@@ -48,9 +56,8 @@ export class Edit implements OnInit {
       this.category.set(e.category || 'อื่นๆ');
       this.picture.set(e.picture);
       this.username.set(e.secrets.username ?? '');
-      this.password.set(e.secrets.password ?? '');
-      this.pin.set(e.secrets.pin ?? '');
       this.other.set(e.secrets.other ?? '');
+      this.encryptedBlob.set(e.secrets.encryptedBlob ?? '');
     } catch (e: any) {
       this.error.set(e?.error?.error ?? e?.message ?? 'API error');
     } finally {
@@ -76,6 +83,26 @@ export class Edit implements OnInit {
     }
   }
 
+  async runEncrypt() {
+    this.encError.set(null);
+    if (!this.encPass() || !this.encPlain()) {
+      this.encError.set('กรุณากรอก Passphrase และข้อมูลที่จะเข้ารหัส');
+      return;
+    }
+    try {
+      const res = await aesEncrypt(this.encPass(), this.encPlain());
+      this.encResult.set(res);
+    } catch (e: any) {
+      this.encError.set(e?.message ?? 'Encryption error');
+    }
+  }
+
+  applyToBlob() {
+    const r = this.encResult();
+    if (!r) return;
+    this.encryptedBlob.set(r.packedBase64);
+  }
+
   async save() {
     const cur = this.entry();
     if (!cur || this.saving()) return;
@@ -90,9 +117,8 @@ export class Edit implements OnInit {
         picture: this.picture(),
         secrets: {
           username: this.username(),
-          password: this.password(),
-          pin: this.pin(),
           other: this.other(),
+          encryptedBlob: this.encryptedBlob(),
         },
       });
       this.router.navigate(['/safebox']);
@@ -101,6 +127,12 @@ export class Edit implements OnInit {
     } finally {
       this.saving.set(false);
     }
+  }
+
+  goView() {
+    const cur = this.entry();
+    if (!cur || !this.hasSavedBlob()) return;
+    this.router.navigate(['/safebox/view', cur.usersecretId]);
   }
 
   async remove() {

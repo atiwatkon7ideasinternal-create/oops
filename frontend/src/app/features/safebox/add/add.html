@@ -37,14 +37,6 @@
         <input name="username" placeholder="Enter username" ngModel />
       </label>
       <label class="field">
-        <span class="label">PIN / Email / Phone</span>
-        <input name="pin" placeholder="Enter PIN/Email/Phone" ngModel />
-      </label>
-      <label class="field">
-        <span class="label">Password</span>
-        <input name="password" type="password" placeholder="Enter Password" ngModel />
-      </label>
-      <label class="field">
         <span class="label">ข้อมูลสำคัญอื่นๆ</span>
         <input name="other" placeholder="Enter ..." ngModel />
       </label>
@@ -58,6 +50,62 @@
           }
         </select>
       </label>
+
+      <!-- Encrypt panel -->
+      <div class="enc-panel">
+        <label class="enc-step">
+          <span class="num">1</span>
+          <span>กำหนด Passphrase</span>
+        </label>
+        <input
+          type="password"
+          class="enc-input"
+          [ngModel]="encPass()"
+          (ngModelChange)="encPass.set($event)"
+          name="encPass"
+          placeholder="passphrase"
+        />
+
+        <label class="enc-step">
+          <span class="num">2</span>
+          <span>บันทึกข้อมูล (plaintext)</span>
+        </label>
+        <textarea
+          class="enc-input enc-area"
+          [ngModel]="encPlain()"
+          (ngModelChange)="encPlain.set($event)"
+          name="encPlain"
+          placeholder="ข้อมูลที่ต้องการเข้ารหัส..."
+        ></textarea>
+
+        <button type="button" class="btn-enc" (click)="runEncrypt()">เข้ารหัส</button>
+        @if (encError()) { <p class="form-error">{{ encError() }}</p> }
+
+        @if (encResult(); as r) {
+          <div class="enc-output">
+            <div class="enc-section-title">
+              <span class="num">3</span>
+              <span>Passphrase ถูกแปลงเป็น Key (PBKDF2 + salt)</span>
+            </div>
+            <div class="enc-row"><span>Salt (16 bytes)</span><code>{{ r.saltHex }}</code></div>
+            <div class="enc-row"><span>Derived Key (32 bytes)</span><code>{{ r.derivedKeyHex }}</code></div>
+
+            <div class="enc-section-title">
+              <span class="num">4</span>
+              <span>ข้อมูลถูกเข้ารหัส (AES-256-GCM)</span>
+            </div>
+            <div class="enc-row"><span>IV (12 bytes)</span><code>{{ r.ivHex }}</code></div>
+            <div class="enc-row"><span>Ciphertext</span><code>{{ r.ciphertextHex }}</code></div>
+            <div class="enc-row"><span>Auth Tag (16 bytes)</span><code>{{ r.tagHex }}</code></div>
+            <div class="enc-row packed"><span>Packed (Base64)</span><code>{{ r.packedBase64 }}</code></div>
+
+            <button type="button" class="btn-link" (click)="applyToBlob()">→ คลิกเพื่อวาง Base64</button>
+            @if (encryptedBlob() === r.packedBase64) {
+              <span class="applied-badge">✓ ใช้แล้ว — กด SAVE เพื่อบันทึก</span>
+            }
+          </div>
+        }
+      </div>
 
       @if (error()) {
         <p class="form-error">{{ error() }}</p>

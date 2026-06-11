@@ -4,10 +4,8 @@ import { firstValueFrom } from 'rxjs';
 
 export interface VaultSecrets {
   username?: string;
-  password?: string;
-  pin?: string;
-  qr?: string;
   other?: string;
+  encryptedBlob?: string; // Base64 packed AES-256-GCM ciphertext encrypted with user's passphrase
 }
 
 export const SAFEBOX_CATEGORIES = [

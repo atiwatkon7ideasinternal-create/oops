@@ -1,0 +1,63 @@
+<app-header-app />
+
+<main class="page">
+  @if (loading()) {
+    <p class="loading">กำลังโหลด...</p>
+  } @else if (entry(); as e) {
+    <h1 class="title">{{ e.systemName }}</h1>
+    @if (e.secretName) { <p class="sub">{{ e.secretName }}</p> }
+
+    <button type="button" class="btn-link" (click)="fillFromEntry()">
+      → คลิกเพื่อวาง Base64
+    </button>
+
+    <section class="dec-panel">
+      <h2>🔓 Decrypt</h2>
+
+      <label class="dec-step"><span class="num">5</span> ใส่ Passphrase</label>
+      <input
+        type="password"
+        class="dec-input"
+        placeholder="passphrase"
+        [ngModel]="passphrase()"
+        (ngModelChange)="passphrase.set($event)"
+      />
+
+      <label class="dec-step">Packed ciphertext (Base64)</label>
+      <textarea
+        class="dec-input dec-area mono"
+        [ngModel]="packed()"
+        (ngModelChange)="packed.set($event)"
+      ></textarea>
+
+      <button type="button" class="btn-dec" (click)="runDecrypt()" [disabled]="working()">
+        {{ working() ? 'กำลังถอด...' : 'ถอดรหัส' }}
+      </button>
+
+      @if (decError()) { <p class="form-error">{{ decError() }}</p> }
+
+      @if (derivedKeyHex()) {
+        <div class="dec-output">
+          <div class="dec-section-title">
+            <span class="num">6</span>
+            <span>Derived Key + ข้อมูลที่ถอดได้</span>
+          </div>
+          <div class="dec-row"><span>Derived Key</span><code>{{ derivedKeyHex() }}</code></div>
+          @if (plaintext()) {
+            <div class="dec-row plain">
+              <span>Plaintext</span>
+              <code class="plain-value">{{ plaintext() }}</code>
+            </div>
+          }
+        </div>
+      }
+    </section>
+
+    <div class="actions">
+      <button type="button" class="btn-nav" (click)="goHome()">กลับหน้าแรก</button>
+      <button type="button" class="btn-nav" (click)="goEdit()">แก้ไขข้อมูล</button>
+    </div>
+  } @else {
+    <p class="loading">{{ error() ?? 'ไม่พบรายการ' }}</p>
+  }
+</main>

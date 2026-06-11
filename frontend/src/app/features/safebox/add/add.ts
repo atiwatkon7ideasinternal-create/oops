@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { HeaderApp } from '../../../shared/header-app/header-app';
 import { VaultService, SAFEBOX_CATEGORIES } from '../../../data/vault.service';
 import { resizeToDataUrl } from '../../../data/image.util';
+import { aesEncrypt, AesPackedParts } from '../../../data/aes.util';
 
 @Component({
   selector: 'app-safebox-add',
@@ -19,6 +20,13 @@ export class Add {
   error = signal<string | null>(null);
   picture = signal('');
   categories = SAFEBOX_CATEGORIES;
+
+  // Encrypt panel state
+  encPass = signal('');
+  encPlain = signal('');
+  encResult = signal<AesPackedParts | null>(null);
+  encError = signal<string | null>(null);
+  encryptedBlob = signal('');
 
   back() { history.back(); }
 
@@ -38,9 +46,29 @@ export class Add {
     }
   }
 
+  async runEncrypt() {
+    this.encError.set(null);
+    if (!this.encPass() || !this.encPlain()) {
+      this.encError.set('กรุณากรอก Passphrase และข้อมูลที่จะเข้ารหัส');
+      return;
+    }
+    try {
+      const res = await aesEncrypt(this.encPass(), this.encPlain());
+      this.encResult.set(res);
+    } catch (e: any) {
+      this.encError.set(e?.message ?? 'Encryption error');
+    }
+  }
+
+  applyToBlob() {
+    const r = this.encResult();
+    if (!r) return;
+    this.encryptedBlob.set(r.packedBase64);
+  }
+
   async save(f: NgForm) {
     if (this.loading()) return;
-    const { systemName, secretName, secretDescription, category, username, password, pin, other } = f.value;
+    const { systemName, secretName, secretDescription, category, username, other } = f.value;
     if (!systemName) {
       this.error.set('กรุณากรอกชื่อระบบ');
       return;
@@ -58,7 +86,11 @@ export class Add {
         secretDescription: secretDescription || '',
         picture: this.picture() || undefined,
         category,
-        secrets: { username, password, pin, other },
+        secrets: {
+          username,
+          other,
+          encryptedBlob: this.encryptedBlob(),
+        },
       });
       this.router.navigate(['/safebox']);
     } catch (e: any) {
