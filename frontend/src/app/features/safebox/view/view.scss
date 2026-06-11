@@ -23,17 +23,28 @@
 }
 
 .btn-link {
-  background: rgba(255, 255, 255, 0.08);
-  border: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(244, 215, 31, 0.16);
+  border: 1.5px solid var(--color-yellow);
+  border-radius: 10px;
   color: var(--color-yellow);
-  text-decoration: underline;
-  font-size: 0.95rem;
+  text-decoration: none;
+  font-size: 1rem;
+  font-weight: 700;
+  font-family: var(--font-display);
   cursor: pointer;
-  padding: 8px 14px;
-  border-radius: 6px;
-  margin: 18px 0 12px;
+  padding: 11px 22px;
+  margin: 20px 0 14px;
+  transition: background 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: 0 2px 8px rgba(244, 215, 31, 0.22);
 }
-.btn-link:hover { background: rgba(255, 255, 255, 0.14); }
+.btn-link:hover {
+  background: rgba(244, 215, 31, 0.3);
+  transform: translateX(3px);
+  box-shadow: 0 4px 12px rgba(244, 215, 31, 0.35);
+}
 
 .dec-panel {
   background: rgba(255, 255, 255, 0.06);
